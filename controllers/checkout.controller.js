@@ -227,6 +227,20 @@ export const completeCheckout = async (req, res) => {
     for (const item of cart.items) {
       const orderProductId = await getNextOrderProductId();
       
+      // Process options for this item
+      const options = [];
+      for (const opt of item.options) {
+        const orderOptionId = await getNextOrderOptionId();
+        options.push({
+          order_option_id: orderOptionId,
+          product_option_id: opt.option_id,
+          product_option_value_id: opt.option_value_id,
+          name: opt.option_name,
+          value: opt.option_value_name,
+          type: 'select' // Default type
+        });
+      }
+      
       // Create new order product
       const orderProduct = new OrderProduct({
         order_product_id: orderProductId,
@@ -239,20 +253,14 @@ export const completeCheckout = async (req, res) => {
         total: item.final_price * item.quantity,
         tax: 0, // Set appropriately based on your tax calculations
         reward: 0, // Set if you use reward points
-        options: item.options.map(opt => ({
-          order_option_id: await getNextOrderOptionId(),
-          product_option_id: opt.option_id,
-          product_option_value_id: opt.option_value_id,
-          name: opt.option_name,
-          value: opt.option_value_name,
-          type: 'select' // Set appropriately based on option type
-        }))
+        options: options
       });
       
       await orderProduct.save();
       
       // Update product stock if needed
-      if (product.subtract) {
+      const product = await Product.findOne({ product_id: item.product_id });
+      if (product && product.subtract) {
         product.quantity -= item.quantity;
         await product.save();
       }
@@ -279,14 +287,21 @@ export const completeCheckout = async (req, res) => {
   }
 };
 
-// Helper functions
+// Helper functions - Define these as async functions to use await
 async function getNextOrderProductId() {
   const lastProduct = await OrderProduct.findOne().sort({ order_product_id: -1 });
   return lastProduct ? lastProduct.order_product_id + 1 : 1;
 }
 
 async function getNextOrderOptionId() {
-  // Assuming you have an OrderOption model or collection
-  // If not, you might need to create a counter collection or use a different approach
-  return Math.floor(Math.random() * 1000000); // Temporary solution
+  // This is a simple implementation - in production you might want a more robust solution
+  const lastOption = await OrderProduct.aggregate([
+    { $unwind: "$options" },
+    { $sort: { "options.order_option_id": -1 } },
+    { $limit: 1 },
+    { $project: { _id: 0, order_option_id: "$options.order_option_id" } }
+  ]);
+  
+  const lastId = lastOption.length > 0 ? lastOption[0].order_option_id : 0;
+  return lastId + 1;
 }
