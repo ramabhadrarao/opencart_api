@@ -1,19 +1,24 @@
+// services/index.js (fully updated)
 import { connectMongoDB } from '../config/db.js';
 import { migrateCustomers } from './migrations/migrateCustomers.js';
-import { migrateOrders } from './migrations/migrateOrders.js';
+import { migrateCategories } from './migrations/migrateCategories.js';
 import { migrateProducts } from './migrations/migrateProducts.js';
-
-// import { migrateProducts } from './migrations/migrateProducts.js'; // when ready
-
+import { migrateOrders } from './migrations/migrateOrders.js';
+import { migrateOrderProducts } from './migrations/migrateOrderProducts.js';
+import { migrateAddresses } from './migrations/migrateAddresses.js';
 const run = async () => {
   console.log('🚀 Starting MongoDB migration runner...');
   
   await connectMongoDB();
 
   try {
-    await migrateCustomers();   // will skip if already migrated
-    await migrateOrders();      // will skip if already migrated
-    await migrateProducts(); // optional
+    // Migrate in proper order based on dependencies
+    await migrateCustomers();        // Standalone
+    await migrateCategories();       // Standalone
+    await migrateProducts();         // Depends on categories
+    await migrateOrders();           // Depends on customers
+    await migrateOrderProducts();    // Depends on orders and products
+    await migrateAddresses();
   } catch (error) {
     console.error('❌ Migration error:', error.message);
   }
