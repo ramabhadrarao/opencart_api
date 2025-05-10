@@ -202,4 +202,141 @@ export const addToCart = async (req, res) => {
   }
 };
 
-// The rest of your cart controller methods would be updated similarly
+// Update cart item quantity
+export const updateCart = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+    const { item_id, quantity } = req.body;
+    
+    if (!item_id || quantity <= 0) {
+      return res.status(400).json({ message: 'Invalid item ID or quantity' });
+    }
+    
+    // Find cart
+    const cart = await Cart.findOne({ customer_id: customerId });
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+    
+    // Find item in cart
+    const itemIndex = cart.items.findIndex(item => item._id.toString() === item_id);
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: 'Item not found in cart' });
+    }
+    
+    // Get product to check stock
+    const product = await Product.findOne({ 
+      product_id: cart.items[itemIndex].product_id,
+      status: true
+    });
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not available' });
+    }
+    
+    // Check if quantity is valid
+    if (product.subtract && quantity > product.quantity) {
+      return res.status(400).json({ 
+        message: 'Requested quantity exceeds available stock',
+        available: product.quantity
+      });
+    }
+    
+    // Update quantity
+    cart.items[itemIndex].quantity = quantity;
+    cart.items[itemIndex].subtotal = cart.items[itemIndex].final_price * quantity;
+    
+    // Update cart
+    cart.updated_at = Date.now();
+    await cart.save();
+    
+    // Calculate totals
+    let total = 0;
+    let itemsCount = 0;
+    
+    for (const item of cart.items) {
+      total += item.subtotal;
+      itemsCount += item.quantity;
+    }
+    
+    res.json({
+      message: 'Cart updated',
+      cart,
+      total: parseFloat(total.toFixed(2)),
+      items_count: itemsCount
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating cart', error: err.message });
+  }
+};
+
+// Remove item from cart
+export const removeFromCart = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+    const itemId = req.params.item_id;
+    
+    // Find cart
+    const cart = await Cart.findOne({ customer_id: customerId });
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+    
+    // Find and remove item
+    const initialLength = cart.items.length;
+    cart.items = cart.items.filter(item => item._id.toString() !== itemId);
+    
+    if (cart.items.length === initialLength) {
+      return res.status(404).json({ message: 'Item not found in cart' });
+    }
+    
+    // Update cart
+    cart.updated_at = Date.now();
+    await cart.save();
+    
+    // Calculate totals
+    let total = 0;
+    let itemsCount = 0;
+    
+    for (const item of cart.items) {
+      total += item.subtotal;
+      itemsCount += item.quantity;
+    }
+    
+    res.json({
+      message: 'Item removed from cart',
+      cart,
+      total: parseFloat(total.toFixed(2)),
+      items_count: itemsCount
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error removing from cart', error: err.message });
+  }
+};
+
+// Clear cart
+export const clearCart = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+    
+    // Find cart
+    const cart = await Cart.findOne({ customer_id: customerId });
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+    
+    // Clear items
+    cart.items = [];
+    cart.updated_at = Date.now();
+    await cart.save();
+    
+    res.json({
+      message: 'Cart cleared',
+      cart,
+      total: 0,
+      items_count: 0
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error clearing cart', error: err.message });
+  }
+};
