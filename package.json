@@ -2,11 +2,12 @@
   "name": "opencart_api",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
+   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
     "migrate": "node services/index.js",
     "check-tables": "node scripts/checkTables.js",
+    "check-mongo": "node scripts/checkMongoCollections.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
