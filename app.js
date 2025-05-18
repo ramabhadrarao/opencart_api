@@ -27,7 +27,7 @@ import searchRoutes from './routes/search.routes.js';
 import locationRoutes from './routes/location.routes.js';
 import checkoutRoutes from './routes/checkout.routes.js';
 import docsRoutes from './routes/docs.routes.js';
-
+import uploadRoutes from './routes/upload.routes.js';
 // Initialize environment variables
 dotenv.config();
 
@@ -65,7 +65,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/docs', docsRoutes);
-
+app.use('/api/uploads', uploadRoutes);
 // Index route
 app.get('/api', (req, res) => {
   res.json({

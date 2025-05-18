@@ -1,4 +1,4 @@
-// services/index.js (fully updated)
+// services/index.js (with uploads)
 import { connectMongoDB } from '../config/db.js';
 import { migrateCustomers } from './migrations/migrateCustomers.js';
 import { migrateCategories } from './migrations/migrateCategories.js';
@@ -6,6 +6,7 @@ import { migrateProducts } from './migrations/migrateProducts.js';
 import { migrateOrders } from './migrations/migrateOrders.js';
 import { migrateOrderProducts } from './migrations/migrateOrderProducts.js';
 import { migrateAddresses } from './migrations/migrateAddresses.js';
+import { migrateProductUploads } from './migrations/migrateProductUploads.js';
 
 const run = async () => {
   console.log('🚀 Starting MongoDB migration runner...');
@@ -38,7 +39,8 @@ const run = async () => {
     { name: 'Products', fn: migrateProducts },
     { name: 'Orders', fn: migrateOrders },
     { name: 'Order Products', fn: migrateOrderProducts },
-    { name: 'Addresses', fn: migrateAddresses }
+    { name: 'Addresses', fn: migrateAddresses },
+    { name: 'Product Uploads', fn: migrateProductUploads }
   ];
 
   for (const migration of migrations) {
