@@ -7,6 +7,7 @@ import { migrateOrders } from './migrations/migrateOrders.js';
 import { migrateOrderProducts } from './migrations/migrateOrderProducts.js';
 import { migrateAddresses } from './migrations/migrateAddresses.js';
 import { migrateProductUploads } from './migrations/migrateProductUploads.js';
+import { migrateAdmins } from './migrations/migrateAdmins.js';
 
 const run = async () => {
   console.log('🚀 Starting MongoDB migration runner...');
@@ -40,7 +41,8 @@ const run = async () => {
     { name: 'Orders', fn: migrateOrders },
     { name: 'Order Products', fn: migrateOrderProducts },
     { name: 'Addresses', fn: migrateAddresses },
-    { name: 'Product Uploads', fn: migrateProductUploads }
+    { name: 'Product Uploads', fn: migrateProductUploads },
+    { name: 'Admins', fn: migrateAdmins },
   ];
 
   for (const migration of migrations) {

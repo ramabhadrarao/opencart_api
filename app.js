@@ -1,4 +1,4 @@
-// app.js
+// app.js (updated with admin and dashboard routes)
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -28,6 +28,10 @@ import locationRoutes from './routes/location.routes.js';
 import checkoutRoutes from './routes/checkout.routes.js';
 import docsRoutes from './routes/docs.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+// Add new routes
+import adminRoutes from './routes/admin.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+
 // Initialize environment variables
 dotenv.config();
 
@@ -50,6 +54,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/customers/login', authLimiter);
 app.use('/api/customers/register', authLimiter);
 app.use('/api/customers/forgot-password', authLimiter);
+app.use('/api/admin/login', authLimiter); // Add rate limit for admin login
 
 // API routes
 app.use('/api/customers', customerRoutes);
@@ -66,6 +71,10 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/docs', docsRoutes);
 app.use('/api/uploads', uploadRoutes);
+// Add new routes
+app.use('/api/admin', adminRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 // Index route
 app.get('/api', (req, res) => {
   res.json({
@@ -85,7 +94,9 @@ app.get('/api', (req, res) => {
       '/api/search',
       '/api/locations',
       '/api/checkout',
-      '/api/docs'
+      '/api/docs',
+      '/api/admin',
+      '/api/dashboard'
     ]
   });
 });
