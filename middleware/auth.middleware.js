@@ -14,23 +14,24 @@ export const authenticateCustomer = async (req, res, next) => {
     try {
       const sessionId = req.cookies?.session_id;
       if (sessionId) {
-        await OnlineUser.updateOne(
+        console.log(`Updating session ${sessionId} for customer ${decoded.id}`);
+        
+        const result = await OnlineUser.updateOne(
           { session_id: sessionId },
           { 
             $set: { 
               user_id: decoded.id,
-              user_type: 'customer',
+              user_type: 'customer',  // Explicitly set as customer
               username: decoded.name,
               email: decoded.email,
               last_activity: new Date()
             } 
           }
         );
-        console.log('Updated customer session data in auth middleware:', {
-          session_id: sessionId,
-          user_id: decoded.id,
-          user_type: 'customer'
-        });
+        
+        console.log(`Customer session update result: modified=${result.modifiedCount}`);
+      } else {
+        console.log('No session cookie found in authenticated request');
       }
     } catch (err) {
       console.error('Error updating session in auth middleware:', err);

@@ -71,6 +71,7 @@ const trackOnlineUser = async (req, userData, locationData) => {
         sameSite: 'lax'
       });
     }
+    console.log(`New session created: ${sessionId}`);
   }
   
   // Get client info
@@ -86,19 +87,26 @@ const trackOnlineUser = async (req, userData, locationData) => {
     
     if (onlineUser) {
       // Update existing user
-      onlineUser.last_activity = new Date();
-      onlineUser.current_url = currentUrl;
-      onlineUser.page_views += 1;
+      const updateData = {
+        last_activity: new Date(),
+        current_url: currentUrl,
+        page_views: onlineUser.page_views + 1
+      };
       
-      // Update user data if logged in
+      // Only update user data if it's a logged-in user (not guest)
       if (userData.user_id) {
-        onlineUser.user_id = userData.user_id;
-        onlineUser.user_type = userData.user_type;
-        onlineUser.username = userData.username;
-        onlineUser.email = userData.email;
+        updateData.user_id = userData.user_id;
+        updateData.user_type = userData.user_type;
+        updateData.username = userData.username;
+        updateData.email = userData.email;
       }
       
-      await onlineUser.save();
+      // Update the document with atomic operation
+      await OnlineUser.updateOne(
+        { session_id: sessionId },
+        { $set: updateData }
+      );
+      
     } else {
       // Create new online user record
       onlineUser = new OnlineUser({
@@ -137,7 +145,6 @@ const trackOnlineUser = async (req, userData, locationData) => {
     return null;
   }
 };
-
 /**
  * Log user activity
  * @param {Object} req - Express request object
@@ -248,12 +255,14 @@ export const activityTracker = async (req, res, next) => {
       };
       
       // Login activity - Special handling to capture user info from response
+      // Login activity - Special handling to capture user info from response
       if (req.path.includes('/login') && req.method === 'POST' && res.statusCode === 200) {
         activityType = 'login';
         
         // Try to extract user info from response body
         try {
           const resBody = res._body;
+          
           if (resBody && typeof resBody === 'string') {
             const jsonBody = JSON.parse(resBody);
             
@@ -262,7 +271,7 @@ export const activityTracker = async (req, res, next) => {
               // Update userData with details from response for customer login
               userData = {
                 user_id: jsonBody.customer.id,
-                user_type: 'customer',
+                user_type: 'customer',  // Explicitly set as customer
                 username: jsonBody.customer.name,
                 email: jsonBody.customer.email
               };
@@ -274,12 +283,13 @@ export const activityTracker = async (req, res, next) => {
               // Also update the online user record for this session
               const sessionId = req.cookies?.session_id || 'unknown';
               try {
-                await OnlineUser.findOneAndUpdate(
+                // Use updateOne instead of findOneAndUpdate for consistency
+                const result = await OnlineUser.updateOne(
                   { session_id: sessionId },
                   { 
                     $set: { 
                       user_id: jsonBody.customer.id,
-                      user_type: 'customer', // FIXED: Explicitly set as customer
+                      user_type: 'customer',  // Explicitly set as customer
                       username: jsonBody.customer.name,
                       email: jsonBody.customer.email,
                       last_activity: new Date()
@@ -287,9 +297,10 @@ export const activityTracker = async (req, res, next) => {
                   },
                   { upsert: true }
                 );
+                
                 console.log('Updated online user after customer login:', {
                   user_id: jsonBody.customer.id,
-                  user_type: 'customer',
+                  user_type: 'customer',  // Log the type
                   session_id: sessionId
                 });
               } catch (err) {
@@ -299,7 +310,7 @@ export const activityTracker = async (req, res, next) => {
               // Update userData with details from response for admin login
               userData = {
                 user_id: jsonBody.admin.id,
-                user_type: 'admin',
+                user_type: 'admin',  // Explicitly set as admin
                 username: jsonBody.admin.username,
                 email: jsonBody.admin.email
               };
@@ -311,12 +322,13 @@ export const activityTracker = async (req, res, next) => {
               // Also update the online user record for this session
               const sessionId = req.cookies?.session_id || 'unknown';
               try {
-                await OnlineUser.findOneAndUpdate(
+                // Use updateOne instead of findOneAndUpdate for consistency
+                const result = await OnlineUser.updateOne(
                   { session_id: sessionId },
                   { 
                     $set: { 
                       user_id: jsonBody.admin.id,
-                      user_type: 'admin', // FIXED: Explicitly set as admin
+                      user_type: 'admin',  // Explicitly set as admin
                       username: jsonBody.admin.username,
                       email: jsonBody.admin.email,
                       last_activity: new Date()
@@ -324,9 +336,10 @@ export const activityTracker = async (req, res, next) => {
                   },
                   { upsert: true }
                 );
+                
                 console.log('Updated online user after admin login:', {
                   user_id: jsonBody.admin.id,
-                  user_type: 'admin',
+                  user_type: 'admin',  // Log the type
                   session_id: sessionId
                 });
               } catch (err) {

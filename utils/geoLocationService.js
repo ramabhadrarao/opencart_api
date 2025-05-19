@@ -21,47 +21,48 @@ class GeoLocationService {
    * @returns {Promise<Object>} - Location data
    */
   async getLocationFromIp(ip) {
-    // Skip lookup for localhost/private IPs
-    if (this.isPrivateIP(ip) || ip === '127.0.0.1' || ip === '::1') {
-      return this.getDefaultLocation();
-    }
+  // Skip lookup for localhost/private IPs
+  if (!ip || this.isPrivateIP(ip) || ip === '127.0.0.1' || ip === '::1') {
+    console.log(`Skipping geolocation for private/local IP: ${ip}`);
+    return this.getDefaultLocation();
+  }
 
-    // Check cache first
-    const cacheKey = `ip:${ip}`;
-    const cachedData = this.getFromCache(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
+  // Check cache first
+  const cacheKey = `ip:${ip}`;
+  const cachedData = this.getFromCache(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
 
-    // Try different free geolocation APIs with fallback
+  // Try different free geolocation APIs with fallback
+  try {
+    // First try ip-api.com (free tier, no API key required)
+    const location = await this.getLocationFromIpApi(ip);
+    this.saveToCache(cacheKey, location);
+    return location;
+  } catch (error) {
+    console.error(`Error with ip-api.com for IP ${ip}: ${error.message}`);
+    
     try {
-      // First try ip-api.com (free tier, no API key required, 45 req/min limit)
-      const location = await this.getLocationFromIpApi(ip);
+      // Fallback to ipinfo.io
+      const location = await this.getLocationFromIpInfo(ip);
       this.saveToCache(cacheKey, location);
       return location;
     } catch (error) {
-      console.error('Error with ip-api.com, trying fallback:', error.message);
+      console.error(`Error with ipinfo.io for IP ${ip}: ${error.message}`);
       
       try {
-        // Fallback to ipinfo.io (free tier, limited requests)
-        const location = await this.getLocationFromIpInfo(ip);
+        // Last fallback to ipgeolocation.io
+        const location = await this.getLocationFromIpGeoLocation(ip);
         this.saveToCache(cacheKey, location);
         return location;
       } catch (error) {
-        console.error('Error with ipinfo.io, trying last fallback:', error.message);
-        
-        try {
-          // Last fallback to ipgeolocation.io
-          const location = await this.getLocationFromIpGeoLocation(ip);
-          this.saveToCache(cacheKey, location);
-          return location;
-        } catch (error) {
-          console.error('All geolocation attempts failed:', error.message);
-          return this.getDefaultLocation();
-        }
+        console.error(`All geolocation attempts failed for IP ${ip}: ${error.message}`);
+        return this.getDefaultLocation();
       }
     }
   }
+}
 
   /**
    * Get location from ip-api.com

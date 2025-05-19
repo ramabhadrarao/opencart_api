@@ -33,12 +33,17 @@ export const loginCustomer = async (req, res) => {
 
   const { accessToken, refreshToken } = generateTokens(payload);
 
-  return res.json({
+  const responseData = {
     message: 'Login successful',
     accessToken,
     refreshToken,
     customer: payload
-  });
+  };
+  
+  // Set response body for activityTracker middleware
+  res._body = JSON.stringify(responseData);
+
+  return res.json(responseData);
 };
 
 // PROTECTED PROFILE (test)

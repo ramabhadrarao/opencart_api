@@ -32,6 +32,7 @@ const sendAdminNotification = async (subject, message, admin, actionUrl = '', ac
 };
 
 // LOGIN
+// controllers/admin.controller.js - loginAdmin function
 export const loginAdmin = async (req, res) => {
   const { username, password } = req.body;
   
@@ -61,6 +62,7 @@ export const loginAdmin = async (req, res) => {
     await admin.save();
 
     // Optional: Send login notification for security
+   // Optional: Send login notification for security
     if (admin.email) {
       sendAdminNotification(
         'Admin Login Alert',
@@ -71,17 +73,21 @@ export const loginAdmin = async (req, res) => {
       ).catch(err => console.error('Error sending login notification:', err));
     }
 
-    return res.json({
+    const responseData = {
       message: 'Admin login successful',
       accessToken,
       refreshToken,
       admin: payload
-    });
+    };
+    
+    // Set response body for activityTracker middleware
+    res._body = JSON.stringify(responseData);
+
+    return res.json(responseData);
   } catch (err) {
     return res.status(500).json({ message: 'Error during login', error: err.message });
   }
 };
-
 // GET PROFILE
 export const getProfile = async (req, res) => {
   try {
