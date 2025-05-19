@@ -1,6 +1,8 @@
 // controllers/search.controller.js
 import Product from '../models/product.model.js';
 import Category from '../models/category.model.js';
+import SearchLog from '../models/searchLog.model.js';
+import { logActivity } from '../middleware/activityTracker.middleware.js';
 
 export const searchProducts = async (req, res) => {
   try {
@@ -110,7 +112,8 @@ export const searchProducts = async (req, res) => {
       };
     });
     
-    res.json({
+    // Set the response body for the searchLogger middleware to extract
+    const responseData = {
       products: formattedProducts,
       pagination: {
         page: parseInt(page),
@@ -125,7 +128,12 @@ export const searchProducts = async (req, res) => {
         price_max,
         sort
       }
-    });
+    };
+    
+    // Store raw response for searchLogger middleware
+    res._body = JSON.stringify(responseData);
+    
+    res.json(responseData);
   } catch (err) {
     res.status(500).json({ message: 'Error searching products', error: err.message });
   }
@@ -186,5 +194,52 @@ export const getSearchFilters = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching search filters', error: err.message });
+  }
+};
+
+// Get popular searches
+export const getPopularSearches = async (req, res) => {
+  try {
+    // Get the most popular search terms in the last 30 days
+    const days = parseInt(req.query.days) || 30;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    const popularSearches = await SearchLog.aggregate([
+      { 
+        $match: { 
+          created_at: { $gte: startDate },
+          query: { $ne: '' } 
+        } 
+      },
+      {
+        $group: {
+          _id: { $toLower: '$query' },
+          count: { $sum: 1 },
+          avg_results: { $avg: '$results_count' },
+          last_searched: { $max: '$created_at' }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          query: '$_id',
+          count: 1,
+          avg_results: { $round: ['$avg_results', 0] },
+          last_searched: 1
+        }
+      }
+    ]);
+    
+    res.json({
+      period: `${days} days`,
+      popular_searches: popularSearches
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching popular searches', error: err.message });
   }
 };

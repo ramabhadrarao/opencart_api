@@ -6,6 +6,9 @@ import geoLocationService from '../utils/geoLocationService.js';
 /**
  * Middleware to log search queries
  */
+/**
+ * Middleware to log search queries
+ */
 export const searchLogger = async (req, res, next) => {
   // Save original end method
   const originalEnd = res.end;
@@ -96,7 +99,6 @@ export const searchLogger = async (req, res, next) => {
   
   next();
 };
-
 // controllers/search.controller.js (updated)
 import Product from '../models/product.model.js';
 import Category from '../models/category.model.js';
