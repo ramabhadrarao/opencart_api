@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenCart Login</title>
+  <!-- Tabler UI CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler/1.0.0-beta19/css/tabler.min.css">
+  <style>
+    .login-container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding-top: 100px;
+    }
+    .login-card {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #login-error {
+      display: none;
+    }
+    #login-success {
+      display: none;
+    }
+    .loader {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+      display: none;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="theme-light">
+  <div class="page">
+    <div class="page-body">
+      <div class="container-tight login-container">
+        <div class="card login-card">
+          <div class="card-header login-header">
+            <h3 class="card-title">Login to your account</h3>
+          </div>
+          <div class="card-body">
+            <!-- Alert for login errors -->
+            <div id="login-error" class="alert alert-danger">
+              <div class="d-flex">
+                <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M12 9v2m0 4v.01"></path>
+                    <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75"></path>
+                  </svg>
+                </div>
+                <div id="error-message">
+                  Login failed. Please check your credentials.
+                </div>
+              </div>
+            </div>
+
+            <!-- Alert for login success -->
+            <div id="login-success" class="alert alert-success">
+              <div class="d-flex">
+                <div>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M5 12l5 5l10 -10"></path>
+                  </svg>
+                </div>
+                <div>
+                  Login successful! Redirecting...
+                </div>
+              </div>
+            </div>
+
+            <form id="login-form">
+              <div class="mb-3">
+                <label class="form-label">Email address</label>
+                <input type="email" id="email" class="form-control" placeholder="your@email.com" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">
+                  Password
+                  <span class="form-label-description">
+                    <a href="#" class="link-secondary">Forgot password?</a>
+                  </span>
+                </label>
+                <div class="input-group input-group-flat">
+                  <input type="password" id="password" class="form-control" placeholder="Your password" required>
+                  <span class="input-group-text">
+                    <a href="#" class="link-secondary" title="Show password" data-bs-toggle="tooltip" onclick="togglePassword(event)">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                        <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+                      </svg>
+                    </a>
+                  </span>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-check">
+                  <input type="checkbox" class="form-check-input" id="remember-me">
+                  <span class="form-check-label">Remember me on this device</span>
+                </label>
+              </div>
+              <div class="form-footer">
+                <button type="submit" class="btn btn-primary w-100">
+                  <span class="loader" id="login-loader"></span>
+                  <span id="login-btn-text">Sign in</span>
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="card-footer">
+            <div class="text-center">
+              Don't have an account? <a href="#">Sign up</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabler UI JavaScript bundle -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabler/1.0.0-beta19/js/tabler.min.js"></script>
+  
+  <script>
+    // Configuration - replace with your actual API URL
+    const API_URL = 'http://localhost:5000/api';
+
+    // Function to record user activity
+    async function recordUserActivity(token, activityData) {
+      const response = await fetch(`${API_URL}/user-activity`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(activityData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to record user activity');
+      }
+      
+      return await response.json();
+    }
+
+    // Login form submission handler
+    document.getElementById('login-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      // Show loader and disable button
+      toggleLoading(true);
+      
+      // Hide any previous alerts
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('login-success').style.display = 'none';
+      
+      // Get form values
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        // Call the login API
+        const response = await fetch(`${API_URL}/customers/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        // Parse response data
+        const data = await response.json();
+        
+        if (!response.ok) {
+          // Handle error response
+          throw new Error(data.message || 'Login failed');
+        }
+        
+        // Store tokens in localStorage
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('customerData', JSON.stringify(data.customer));
+        
+        // Record user activity as guest type in database
+        try {
+          await recordUserActivity(data.accessToken, {
+            activity_type: 'login',
+            user_type: 'guest', // Recording as guest as requested
+            activity_data: {
+              user_id: data.customer.id,
+              email: data.customer.email
+            }
+          });
+          console.log('User activity recorded as guest');
+        } catch (activityError) {
+          console.error('Failed to record user activity:', activityError);
+          // Continue with login process even if activity recording fails
+        }
+        
+        // Show success message
+        document.getElementById('login-success').style.display = 'block';
+        
+        // Redirect after successful login (after a short delay to show the success message)
+        setTimeout(() => {
+          window.location.href = 'dashboard.html'; // Replace with your dashboard URL
+        }, 1500);
+        
+      } catch (error) {
+        // Display error message
+        document.getElementById('error-message').textContent = error.message || 'Login failed. Please try again.';
+        document.getElementById('login-error').style.display = 'block';
+        
+        // Enable button and hide loader
+        toggleLoading(false);
+      }
+    });
+    
+    // Toggle password visibility
+    function togglePassword(event) {
+      event.preventDefault();
+      const passwordInput = document.getElementById('password');
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      
+      // Change the eye icon
+      const svg = event.currentTarget.querySelector('svg');
+      if (type === 'text') {
+        svg.innerHTML = `
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3 3l18 18" />
+          <path d="M10.584 10.587a2 2 0 0 0 2.828 2.83" />
+          <path d="M9.363 5.365a9.466 9.466 0 0 1 2.637 -.365c4 0 7.333 2.333 10 7c-.778 1.361 -1.612 2.524 -2.503 3.488m-2.14 1.861c-1.631 1.1 -3.415 1.651 -5.357 1.651c-4 0 -7.333 -2.333 -10 -7c1.369 -2.395 2.913 -4.175 4.632 -5.341" />
+        `;
+      } else {
+        svg.innerHTML = `
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+          <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+        `;
+      }
+    }
+    
+    // Toggle loading state
+    function toggleLoading(isLoading) {
+      const loginButton = document.querySelector('button[type="submit"]');
+      const loginText = document.getElementById('login-btn-text');
+      const loader = document.getElementById('login-loader');
+      
+      if (isLoading) {
+        loginButton.disabled = true;
+        loader.style.display = 'inline-block';
+        loginText.textContent = 'Signing in...';
+      } else {
+        loginButton.disabled = false;
+        loader.style.display = 'none';
+        loginText.textContent = 'Sign in';
+      }
+    }
+    
+    // Check if user is already logged in
+    document.addEventListener('DOMContentLoaded', function() {
+      const accessToken = localStorage.getItem('accessToken');
+      if (accessToken) {
+        // Redirect to dashboard if already logged in
+        window.location.href = 'dashboard.html'; // Replace with your dashboard URL
+      }
+    });
+  </script>
+</body>
+</html>
