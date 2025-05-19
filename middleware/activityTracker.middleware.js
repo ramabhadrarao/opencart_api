@@ -235,7 +235,7 @@ export const activityTracker = async (req, res, next) => {
     await trackOnlineUser(req, userData, locationData);
     
     // Intercept response to log activity after request is complete
-    res.end = function(...args) {
+    res.end = async function(...args) {
       // Call the original end method
       originalEnd.apply(res, args);
       
@@ -270,6 +270,31 @@ export const activityTracker = async (req, res, next) => {
               // Add login details to activity data
               activityData.user_id = jsonBody.customer.id;
               activityData.email = jsonBody.customer.email;
+              
+              // Also update the online user record for this session
+              const sessionId = req.cookies?.session_id || 'unknown';
+              try {
+                await OnlineUser.findOneAndUpdate(
+                  { session_id: sessionId },
+                  { 
+                    $set: { 
+                      user_id: jsonBody.customer.id,
+                      user_type: 'customer', // FIXED: Explicitly set as customer
+                      username: jsonBody.customer.name,
+                      email: jsonBody.customer.email,
+                      last_activity: new Date()
+                    }
+                  },
+                  { upsert: true }
+                );
+                console.log('Updated online user after customer login:', {
+                  user_id: jsonBody.customer.id,
+                  user_type: 'customer',
+                  session_id: sessionId
+                });
+              } catch (err) {
+                console.error('Error updating online user after login:', err);
+              }
             } else if (jsonBody.admin) {
               // Update userData with details from response for admin login
               userData = {
@@ -282,6 +307,31 @@ export const activityTracker = async (req, res, next) => {
               // Add login details to activity data
               activityData.user_id = jsonBody.admin.id;
               activityData.email = jsonBody.admin.email;
+              
+              // Also update the online user record for this session
+              const sessionId = req.cookies?.session_id || 'unknown';
+              try {
+                await OnlineUser.findOneAndUpdate(
+                  { session_id: sessionId },
+                  { 
+                    $set: { 
+                      user_id: jsonBody.admin.id,
+                      user_type: 'admin', // FIXED: Explicitly set as admin
+                      username: jsonBody.admin.username,
+                      email: jsonBody.admin.email,
+                      last_activity: new Date()
+                    }
+                  },
+                  { upsert: true }
+                );
+                console.log('Updated online user after admin login:', {
+                  user_id: jsonBody.admin.id,
+                  user_type: 'admin',
+                  session_id: sessionId
+                });
+              } catch (err) {
+                console.error('Error updating online user after login:', err);
+              }
             }
           }
         } catch (e) {

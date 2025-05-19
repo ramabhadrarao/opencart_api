@@ -46,8 +46,3 @@ userActivitySchema.index({ active: 1 });
 userActivitySchema.index({ created_at: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 export default mongoose.model('UserActivity', userActivitySchema);
-
-
-
-
-
