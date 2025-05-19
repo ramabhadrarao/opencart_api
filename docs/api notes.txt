@@ -1,0 +1,147 @@
+Complete API Routes Overview
+I've analyzed all route files to provide a comprehensive list of available endpoints and their functionalities. This overview can serve as a quick reference guide for the OpenCart API.
+1. Admin Routes (admin.routes.js)
+javascript// Public routes
+POST /api/admin/login                 - Admin login with username and password
+
+// Protected routes (require admin authentication)
+GET  /api/admin/profile               - Get current admin's profile
+PUT  /api/admin/update/:id            - Update admin information
+POST /api/admin/change-password       - Change admin password
+GET  /api/admin/all                   - Get all admins (superadmin only)
+2. Backup Routes (backup.routes.js)
+javascript// All require admin authentication
+GET    /api/backup                     - Get list of all backups
+POST   /api/backup                     - Create a new backup
+POST   /api/backup/restore/:backupName - Restore from a specific backup
+DELETE /api/backup/:backupName         - Delete a specific backup
+3. Cart Routes (cart.routes.js)
+javascript// All require customer authentication
+GET    /api/cart                     - Get customer's cart contents
+POST   /api/cart/add                 - Add product to cart
+PUT    /api/cart/update              - Update cart item quantity
+DELETE /api/cart/remove/:item_id     - Remove specific item from cart
+DELETE /api/cart/clear               - Clear all items from cart
+4. Category Routes (category.routes.js)
+javascript// Public routes
+GET /api/categories        - Get all categories
+GET /api/categories/:id    - Get specific category with products
+5. Checkout Routes (checkout.routes.js)
+javascript// All require customer authentication
+POST /api/checkout/start          - Start checkout process
+POST /api/checkout/shipping       - Add shipping method to checkout
+POST /api/checkout/payment        - Add payment method to checkout
+POST /api/checkout/complete       - Complete checkout and create order
+POST /api/checkout/apply-coupon   - Apply coupon to checkout
+6. Coupon Routes (coupon.routes.js)
+javascript// Admin-only routes
+GET    /api/coupons             - Get all coupons
+POST   /api/coupons             - Create new coupon
+PUT    /api/coupons/:id         - Update existing coupon
+DELETE /api/coupons/:id         - Delete coupon
+
+// Customer/Admin routes
+GET    /api/coupons/:code       - Get coupon by code (accessible by both customer and admin)
+7. Customer Routes (customer.routes.js)
+javascript// Public routes
+GET  /api/customers              - Test route ("Customer routes working!")
+POST /api/customers/login        - Customer login
+POST /api/customers/register     - Register new customer
+POST /api/customers/forgot-password - Request password reset
+POST /api/customers/reset-password  - Reset password with token
+POST /api/customers/refresh-token   - Refresh expired JWT
+
+// Protected routes (require customer authentication)
+GET  /api/customers/profile         - Get customer profile
+PUT  /api/customers/profile         - Update customer profile
+POST /api/customers/change-password - Change password
+GET  /api/customers/addresses       - Get customer addresses
+POST /api/customers/address         - Add new address
+8. Dashboard Routes (dashboard.routes.js)
+javascript// All require admin authentication
+GET /api/dashboard/sales           - Get sales revenue statistics
+GET /api/dashboard/orders/new      - Get new orders
+GET /api/dashboard/customers/new   - Get new customers
+GET /api/dashboard/customers/online - Get online customers
+GET /api/dashboard/revenue/yearly  - Get yearly revenue by month
+GET /api/dashboard/products/top    - Get top-selling products
+GET /api/dashboard/orders/recent   - Get recent orders with details
+9. Docs Routes (docs.routes.js)
+javascript// Public route
+GET /api/docs - Get API documentation
+10. Download Routes (download.routes.js)
+javascript// All require customer authentication
+GET /api/downloads/products        - Get downloadable products for customer
+GET /api/downloads/file/:downloadId - Download specific file
+11. Location Routes (location.routes.js)
+javascript// Public routes
+GET /api/locations/countries       - Get all countries
+GET /api/locations/zones/:country_id - Get zones/states for a country
+12. Manufacturer Routes (manufacturer.routes.js)
+javascript// Public routes
+GET /api/manufacturers             - Get all manufacturers
+GET /api/manufacturers/:id         - Get specific manufacturer with products
+13. Order Routes (order.routes.js)
+javascript// Requires customer authentication
+GET /api/orders/my-orders          - Get customer's orders
+14. Product Routes (product.routes.js)
+javascript// Public routes
+GET /api/products                  - Get all products with pagination
+GET /api/products/:id              - Get specific product details
+
+// Protected route (requires customer authentication)
+GET /api/products/purchased        - Get products purchased by customer
+15. Review Routes (review.routes.js)
+javascript// Public route
+GET /api/reviews/product/:product_id - Get reviews for specific product
+
+// Protected route (requires customer authentication)
+POST /api/reviews/add              - Add product review
+16. Search Routes (search.routes.js)
+javascript// Public routes
+GET /api/search                    - Search products with filters
+GET /api/search/filters            - Get available search filters
+17. Upload Routes (upload.routes.js)
+javascript// Both require customer authentication
+GET /api/uploads/file/:filename    - Get uploaded file
+GET /api/uploads/product/:product_id - Get uploaded files for product
+18. Wishlist Routes (wishlist.routes.js)
+javascript// All require customer authentication
+GET    /api/wishlist               - Get customer's wishlist
+POST   /api/wishlist/add           - Add product to wishlist
+DELETE /api/wishlist/remove/:product_id - Remove product from wishlist
+Authentication Overview
+
+No Authentication Required:
+
+Product listings, category browsing, search, manufacturer info
+Public documentation, location data
+Customer registration and login
+
+
+Customer Authentication:
+
+Cart management
+Checkout process
+Managing personal profile and addresses
+Downloading purchased products
+Adding reviews
+Managing wishlist
+Viewing order history
+
+
+Admin Authentication:
+
+Dashboard statistics
+Managing coupons
+Database backup and restore
+Admin user management
+
+
+Dual Authentication (Customer or Admin):
+
+Getting coupon details by code
+
+
+
+This complete routes overview provides a clear understanding of all available API endpoints and their authentication requirements.

@@ -25,7 +25,7 @@ export const migrateManufacturers = async () => {
         sort_order: manufacturer.sort_order
       });
 
-      console.log(`➡️  Manufacturer #${manufacturer.manufacturer_id} (${manufacturer.name}) migrated`);
+      console.log(`➡️ Manufacturer #${manufacturer.manufacturer_id} (${manufacturer.name}) migrated`);
     } catch (error) {
       console.error(`❌ Error migrating manufacturer #${manufacturer.manufacturer_id}:`, error.message);
     }

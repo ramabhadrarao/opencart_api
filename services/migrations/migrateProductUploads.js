@@ -1,4 +1,3 @@
-// services/migrations/migrateProductUploads.js
 import fs from 'fs/promises';
 import path from 'path';
 import { connectMySQL } from '../../config/db.js';
@@ -12,7 +11,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 
 export const migrateProductUploads = async () => {
   const mysql = await connectMySQL();
-  console.log('🔎 Checking product options with uploads...');
+  console.log('🔎 Checking if product uploads are already migrated...');
 
   try {
     // Ensure upload directory exists
@@ -21,6 +20,18 @@ export const migrateProductUploads = async () => {
       console.log(`✅ Upload directory confirmed: ${UPLOAD_DIR}`);
     } catch (err) {
       console.error(`❌ Error creating upload directory: ${err.message}`);
+      return;
+    }
+
+    // Check if any product already has uploads migrated
+    // This query checks if any product has the uploaded_file field populated
+    const migratedProducts = await Product.countDocuments({ 
+      'options.values.uploaded_file': { $exists: true, $ne: '' } 
+    });
+
+    if (migratedProducts > 0) {
+      console.log(`✅ Found ${migratedProducts} products with already migrated uploads. Skipping migration.`);
+      await mysql.end();
       return;
     }
 
