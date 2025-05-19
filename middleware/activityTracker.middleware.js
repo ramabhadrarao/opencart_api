@@ -3,7 +3,9 @@ import UserActivity from '../models/userActivity.model.js';
 import OnlineUser from '../models/onlineUser.model.js';
 import geoLocationService from '../utils/geoLocationService.js';
 import { v4 as uuidv4 } from 'uuid';
-import UAParser from 'ua-parser-js';
+// Fix for ua-parser-js import
+import * as uaParserModule from 'ua-parser-js';
+const UAParser = uaParserModule.UAParser || uaParserModule.default;
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -245,9 +247,47 @@ export const activityTracker = async (req, res, next) => {
         status: res.statusCode
       };
       
-      // Login activity
+      // Login activity - Special handling to capture user info from response
       if (req.path.includes('/login') && req.method === 'POST' && res.statusCode === 200) {
         activityType = 'login';
+        
+        // Try to extract user info from response body
+        try {
+          const resBody = res._body;
+          if (resBody && typeof resBody === 'string') {
+            const jsonBody = JSON.parse(resBody);
+            
+            // Check if customer login or admin login
+            if (jsonBody.customer) {
+              // Update userData with details from response for customer login
+              userData = {
+                user_id: jsonBody.customer.id,
+                user_type: 'customer',
+                username: jsonBody.customer.name,
+                email: jsonBody.customer.email
+              };
+              
+              // Add login details to activity data
+              activityData.user_id = jsonBody.customer.id;
+              activityData.email = jsonBody.customer.email;
+            } else if (jsonBody.admin) {
+              // Update userData with details from response for admin login
+              userData = {
+                user_id: jsonBody.admin.id,
+                user_type: 'admin',
+                username: jsonBody.admin.username,
+                email: jsonBody.admin.email
+              };
+              
+              // Add login details to activity data
+              activityData.user_id = jsonBody.admin.id;
+              activityData.email = jsonBody.admin.email;
+            }
+          }
+        } catch (e) {
+          // Silently catch parsing errors
+          console.error('Error parsing login response:', e);
+        }
       }
       // Logout activity
       else if (req.path.includes('/logout') && res.statusCode === 200) {
@@ -293,6 +333,28 @@ export const activityTracker = async (req, res, next) => {
       // Registration
       else if (req.path.includes('/register') && req.method === 'POST' && res.statusCode === 201) {
         activityType = 'register';
+        // Try to extract user info from response body
+        try {
+          const resBody = res._body;
+          if (resBody && typeof resBody === 'string') {
+            const jsonBody = JSON.parse(resBody);
+            if (jsonBody.customer) {
+              // Update userData with details from response
+              userData = {
+                user_id: jsonBody.customer.id,
+                user_type: 'customer',
+                username: jsonBody.customer.name,
+                email: jsonBody.customer.email
+              };
+              
+              // Add registration details to activity data
+              activityData.user_id = jsonBody.customer.id;
+              activityData.email = jsonBody.customer.email;
+            }
+          }
+        } catch (e) {
+          // Silently catch parsing errors
+        }
       }
       
       // Log the activity asynchronously
