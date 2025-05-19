@@ -1,10 +1,11 @@
-// controllers/checkout.controller.js
+// Updated controllers/checkout.controller.js
 import Checkout from '../models/checkout.model.js';
 import Cart from '../models/cart.model.js';
 import Order from '../models/order.model.js';
 import OrderProduct from '../models/orderProduct.model.js';
 import Customer from '../models/customer.model.js';
 import Product from '../models/product.model.js';
+import { sendOrderConfirmationEmail, sendEmail } from '../utils/emailService.js';
 
 // Start a checkout process
 export const startCheckout = async (req, res) => {
@@ -224,6 +225,7 @@ export const completeCheckout = async (req, res) => {
     await order.save();
     
     // Create order products
+    const orderItems = [];
     for (const item of cart.items) {
       const orderProductId = await getNextOrderProductId();
       
@@ -257,6 +259,7 @@ export const completeCheckout = async (req, res) => {
       });
       
       await orderProduct.save();
+      orderItems.push(orderProduct);
       
       // Update product stock if needed
       const product = await Product.findOne({ product_id: item.product_id });
@@ -276,6 +279,52 @@ export const completeCheckout = async (req, res) => {
     cart.items = [];
     cart.updated_at = new Date();
     await cart.save();
+    
+    // Send order confirmation email
+    try {
+      // Format order items for email template
+      const formattedItems = orderItems.map(item => `
+        <tr>
+          <td>${item.name}</td>
+          <td>${item.quantity}</td>
+          <td>$${parseFloat(item.price).toFixed(2)}</td>
+          <td>$${parseFloat(item.total).toFixed(2)}</td>
+        </tr>
+      `).join('');
+      
+      await sendOrderConfirmationEmail({
+        order_id: newOrderId,
+        items: cart.items,
+        total: checkout.total,
+        payment_method: checkout.payment_method, 
+        shipping_method: checkout.shipping_method,
+        date_added: new Date()
+      }, {
+        email: customer.email,
+        firstname: customer.firstname,
+        lastname: customer.lastname
+      });
+      
+      // Also notify admin about new order
+      await sendEmail({
+        to: process.env.EMAIL_FROM,
+        subject: `New Order #${newOrderId}`,
+        template: 'admin-notification',
+        data: {
+          subject: `New Order #${newOrderId}`,
+          message: `A new order has been placed by ${customer.firstname} ${customer.lastname} (${customer.email}).`,
+          notification_date: new Date().toLocaleString(),
+          ip_address: checkout.ip_address || 'Unknown',
+          user_agent: 'API Order',
+          action_url: `${req.protocol}://${req.get('host')}/admin/order/${newOrderId}`,
+          action_label: 'View Order Details'
+        }
+      });
+      
+    } catch (emailErr) {
+      console.error('Error sending order confirmation email:', emailErr);
+      // Continue with order creation even if email fails
+    }
     
     res.json({
       success: true,

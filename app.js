@@ -1,8 +1,10 @@
+// app.js with updated routes and middleware
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { connectMongoDB } from './config/db.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
@@ -11,6 +13,8 @@ import swaggerSpec from './swagger.js';
 import { requestLogger } from './middleware/logger.middleware.js';
 import { apiLimiter, authLimiter } from './middleware/rate-limit.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+import { activityTracker } from './middleware/activityTracker.middleware.js';
+import { searchLogger } from './middleware/searchLogger.middleware.js';
 
 // Routes
 import customerRoutes from './routes/customer.routes.js';
@@ -29,9 +33,9 @@ import docsRoutes from './routes/docs.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
-// Add new coupon routes
 import couponRoutes from './routes/coupon.routes.js';
 import backupRoutes from './routes/backup.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 // Initialize environment variables
 dotenv.config();
@@ -45,8 +49,13 @@ app.use(cors());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Added for session cookies
 app.use(requestLogger);
 app.use(apiLimiter);
+
+// Apply custom tracking middleware
+app.use(activityTracker);
+app.use(searchLogger);
 
 // API documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -74,9 +83,14 @@ app.use('/api/docs', docsRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-// Register the new coupon routes
 app.use('/api/coupons', couponRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/analytics', analyticsRoutes); // New analytics routes
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date() });
+});
 
 // Index route
 app.get('/api', (req, res) => {
@@ -100,8 +114,9 @@ app.get('/api', (req, res) => {
       '/api/docs',
       '/api/admin',
       '/api/dashboard',
-      '/api/coupons' , // Add new coupon endpoint
-      '/api/backup'
+      '/api/coupons',
+      '/api/backup',
+      '/api/analytics' // New analytics endpoint
     ]
   });
 });

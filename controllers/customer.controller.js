@@ -1,10 +1,15 @@
-// controllers/customer.controller.js
+// Updated controllers/customer.controller.js
 import Customer from '../models/customer.model.js';
 import { hashOpenCartPassword } from '../utils/passwordUtils.js';
 import { generateTokens } from '../utils/jwtUtils.js';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+import { 
+  sendPasswordResetEmail, 
+  sendWelcomeEmail 
+} from '../utils/emailService.js';
 
 dotenv.config();
 
@@ -49,43 +54,76 @@ export const getProfile = async (req, res) => {
   });
 };
 
-// FORGOT PASSWORD - Placeholder
+// FORGOT PASSWORD - Updated with email
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
-  const customer = await Customer.findOne({ email });
+  
+  try {
+    const customer = await Customer.findOne({ email });
 
-  if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
-  const resetToken = uuidv4();
-  customer.reset_token = resetToken;
-  customer.reset_token_expiry = new Date(Date.now() + 1000 * 60 * 15); // 15 min expiry
-  await customer.save();
+    const resetToken = uuidv4();
+    customer.reset_token = resetToken;
+    customer.reset_token_expiry = new Date(Date.now() + 1000 * 60 * 15); // 15 min expiry
+    await customer.save();
 
-  // TODO: Send email with token
-  return res.json({ message: 'Reset token generated. Email functionality pending.', token: resetToken });
+    // Construct reset URL (frontend URL)
+    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password`;
+    
+    // Send email
+    await sendPasswordResetEmail(
+      customer.email,
+      resetToken,
+      resetUrl
+    );
+
+    return res.json({ 
+      message: 'Password reset instructions sent to your email',
+      success: true
+    });
+  } catch (err) {
+    console.error('Error in forgot password:', err);
+    return res.status(500).json({ 
+      message: 'Error processing password reset request', 
+      error: err.message 
+    });
+  }
 };
 
-// RESET PASSWORD - Placeholder
+// RESET PASSWORD - Updated
 export const resetPassword = async (req, res) => {
   const { email, token, newPassword } = req.body;
-  const customer = await Customer.findOne({ email });
+  
+  try {
+    const customer = await Customer.findOne({ 
+      email,
+      reset_token: token,
+      reset_token_expiry: { $gt: new Date() }
+    });
 
-  if (!customer || customer.reset_token !== token || new Date() > customer.reset_token_expiry) {
-    return res.status(400).json({ message: 'Invalid or expired token' });
+    if (!customer) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    const newHash = hashOpenCartPassword(newPassword, customer.salt);
+    customer.password = newHash;
+    customer.reset_token = undefined;
+    customer.reset_token_expiry = undefined;
+
+    await customer.save();
+
+    return res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Error in reset password:', err);
+    return res.status(500).json({ 
+      message: 'Error updating password', 
+      error: err.message 
+    });
   }
-
-  const newHash = hashOpenCartPassword(newPassword, customer.salt);
-  customer.password = newHash;
-  customer.reset_token = undefined;
-  customer.reset_token_expiry = undefined;
-
-  await customer.save();
-
-  return res.json({ message: 'Password updated successfully' });
 };
-// controllers/customer.controller.js (additional methods)
 
-// Register a new customer
+// Register a new customer - Updated with welcome email
 export const registerCustomer = async (req, res) => {
   try {
     const { 
@@ -143,6 +181,19 @@ export const registerCustomer = async (req, res) => {
     };
     
     const { accessToken, refreshToken } = generateTokens(payload);
+    
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        email,
+        firstname,
+        lastname
+      });
+      console.log('Welcome email sent to:', email);
+    } catch (emailErr) {
+      console.error('Error sending welcome email:', emailErr.message);
+      // Continue with registration even if email fails
+    }
     
     res.status(201).json({
       message: 'Registration successful',

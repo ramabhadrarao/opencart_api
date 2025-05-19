@@ -1,7 +1,35 @@
-// controllers/admin.controller.js
+// Updated controllers/admin.controller.js
 import Admin from '../models/admin.model.js';
 import { hashOpenCartPassword } from '../utils/passwordUtils.js';
 import { generateTokens } from '../utils/jwtUtils.js';
+import { sendEmail } from '../utils/emailService.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Helper function to send admin notification
+const sendAdminNotification = async (subject, message, admin, actionUrl = '', actionLabel = '') => {
+  try {
+    await sendEmail({
+      to: admin.email,
+      subject: subject,
+      template: 'admin-notification',
+      data: {
+        subject,
+        message,
+        notification_date: new Date().toLocaleString(),
+        ip_address: admin.ip || 'Unknown',
+        user_agent: 'API Request',
+        action_url: actionUrl,
+        action_label: actionLabel
+      }
+    });
+    return true;
+  } catch (error) {
+    console.error('Error sending admin notification:', error);
+    return false;
+  }
+};
 
 // LOGIN
 export const loginAdmin = async (req, res) => {
@@ -26,6 +54,22 @@ export const loginAdmin = async (req, res) => {
     };
 
     const { accessToken, refreshToken } = generateTokens(payload);
+
+    // Log successful login
+    admin.ip = req.ip;
+    admin.last_login = new Date();
+    await admin.save();
+
+    // Optional: Send login notification for security
+    if (admin.email) {
+      sendAdminNotification(
+        'Admin Login Alert',
+        `Admin account ${admin.username} was logged in successfully.`,
+        admin,
+        `${req.protocol}://${req.get('host')}/admin/dashboard`,
+        'View Dashboard'
+      ).catch(err => console.error('Error sending login notification:', err));
+    }
 
     return res.json({
       message: 'Admin login successful',
@@ -80,6 +124,17 @@ export const updateAdmin = async (req, res) => {
     
     await admin.save();
     
+    // Send notification if another admin updated this profile
+    if (req.admin.id !== adminId && admin.email) {
+      sendAdminNotification(
+        'Admin Profile Updated',
+        `Your admin profile was updated by administrator ${req.admin.username}.`,
+        admin,
+        `${req.protocol}://${req.get('host')}/admin/profile`,
+        'View Your Profile'
+      ).catch(err => console.error('Error sending profile update notification:', err));
+    }
+    
     res.json({
       message: 'Admin updated successfully',
       admin: {
@@ -120,6 +175,17 @@ export const changePassword = async (req, res) => {
     admin.password = hashedNew;
     
     await admin.save();
+    
+    // Send notification email
+    if (admin.email) {
+      sendAdminNotification(
+        'Password Changed',
+        'Your admin account password was changed. If you did not make this change, please contact the system administrator immediately.',
+        admin,
+        `${req.protocol}://${req.get('host')}/admin/login`,
+        'Login to Your Account'
+      ).catch(err => console.error('Error sending password change notification:', err));
+    }
     
     res.json({ message: 'Password changed successfully' });
   } catch (err) {

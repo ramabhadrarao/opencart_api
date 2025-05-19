@@ -145,3 +145,24 @@ Getting coupon details by code
 
 
 This complete routes overview provides a clear understanding of all available API endpoints and their authentication requirements.
+=================
+
+External API Keys (Optional)
+The geolocation service works without API keys using free tiers, but you can get higher rate limits by adding these to your .env file:
+
+ipinfo.io API Key (optional)
+
+Sign up at https://ipinfo.io/signup
+Get your token from the dashboard
+Add to .env: IPINFO_TOKEN=your_token_here
+
+
+ipgeolocation.io API Key (optional)
+
+Sign up at https://ipgeolocation.io/signup
+Get your API key from the dashboard
+Add to .env: IPGEOLOCATION_API_KEY=your_key_here
+
+
+
+These keys are completely optional - the system will work without them by using the free tier of ip-api.com.
