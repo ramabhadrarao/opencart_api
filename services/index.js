@@ -36,15 +36,15 @@ const run = async () => {
 
   // Run migrations in sequence
   const migrations = [
-    { name: 'Customers', fn: migrateCustomers },
-    { name: 'Categories', fn: migrateCategories },
-        { name: 'Manufacturers', fn: migrateManufacturers }, // Added to the migration list
+    // { name: 'Customers', fn: migrateCustomers },
+    // { name: 'Categories', fn: migrateCategories },
+    //     { name: 'Manufacturers', fn: migrateManufacturers }, // Added to the migration list
 
-    { name: 'Products', fn: migrateProducts },
-    { name: 'Orders', fn: migrateOrders },
-    { name: 'Order Products', fn: migrateOrderProducts },
-    { name: 'Addresses', fn: migrateAddresses },
-    { name: 'Product Uploads', fn: migrateProductUploads },
+    // { name: 'Products', fn: migrateProducts },
+    // { name: 'Orders', fn: migrateOrders },
+    // { name: 'Order Products', fn: migrateOrderProducts },
+    // { name: 'Addresses', fn: migrateAddresses },
+    // { name: 'Product Uploads', fn: migrateProductUploads },
     { name: 'Admins', fn: migrateAdmins },
   ];
 
