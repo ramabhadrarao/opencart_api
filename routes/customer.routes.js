@@ -1,35 +1,33 @@
-// routes/customer.routes.js (updated)
+// routes/customer.routes.js
 import express from 'express';
-import {
-  loginCustomer,
-  registerCustomer,
-  getProfile,
-  updateProfile,
-  changePassword,
-  forgotPassword,
-  resetPassword,
-  getAddresses,
-  addAddress,
-  refreshToken
-} from '../controllers/customer.controller.js';
-import { authenticateCustomer } from '../middleware/auth.middleware.js';
+import customerController from '../controllers/customer.controller.js';
+import { authenticateAdmin, authenticateCustomer } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
-router.get('/', (req, res) => {
-  res.json({ message: 'Customer routes working!' });
-});
-// Public routes
-router.post('/login', loginCustomer);
-router.post('/register', registerCustomer);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
-router.post('/refresh-token', refreshToken);
 
-// Protected routes (require authentication)
-router.get('/profile', authenticateCustomer, getProfile);
-router.put('/profile', authenticateCustomer, updateProfile);
-router.post('/change-password', authenticateCustomer, changePassword);
-router.get('/addresses', authenticateCustomer, getAddresses);
-router.post('/address', authenticateCustomer, addAddress);
+// Public routes
+router.post('/login', customerController.loginCustomer);
+router.post('/register', customerController.registerCustomer);
+router.post('/forgot-password', customerController.forgotPassword);
+router.post('/reset-password', customerController.resetPassword);
+
+// Customer profile routes (requires authentication)
+router.get('/profile', authenticateCustomer, customerController.getProfile);
+router.put('/profile', authenticateCustomer, customerController.updateProfile);
+router.post('/change-password', authenticateCustomer, customerController.changePassword);
+
+// Address routes (requires authentication)
+router.get('/addresses', authenticateCustomer, customerController.getAddresses);
+router.post('/address', authenticateCustomer, customerController.addAddress);
+router.put('/address/:addressId', authenticateCustomer, customerController.updateAddress);
+router.delete('/address/:addressId', authenticateCustomer, customerController.deleteAddress);
+router.post('/address/:addressId/default', authenticateCustomer, customerController.setDefaultAddress);
+
+// Admin-only routes
+router.get('/', authenticateAdmin, customerController.getAllCustomers);
+router.get('/:id', authenticateAdmin, customerController.getCustomerById);
+router.post('/', authenticateAdmin, customerController.createCustomer);
+router.put('/:id', authenticateAdmin, customerController.updateCustomer);
+router.delete('/:id', authenticateAdmin, customerController.deleteCustomer);
 
 export default router;
