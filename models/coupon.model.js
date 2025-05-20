@@ -1,6 +1,13 @@
 // models/coupon.model.js
 import mongoose from 'mongoose';
 
+const couponHistorySchema = new mongoose.Schema({
+  order_id: Number,
+  customer_id: Number,
+  amount: Number,
+  date_added: { type: Date, default: Date.now }
+});
+
 const couponSchema = new mongoose.Schema({
   coupon_id: { type: Number, unique: true },
   name: { type: String, required: true },
@@ -21,13 +28,8 @@ const couponSchema = new mongoose.Schema({
   products: [{ type: Number }], // Array of product_ids
   categories: [{ type: Number }], // Array of category_ids
   
-  // History - we could also create a separate collection for this
-  history: [{
-    order_id: Number,
-    customer_id: Number,
-    amount: Number,
-    date_added: { type: Date, default: Date.now }
-  }]
+  // History
+  history: [couponHistorySchema]
 }, { collection: 'coupons' });
 
 export default mongoose.model('Coupon', couponSchema);

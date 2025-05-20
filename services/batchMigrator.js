@@ -18,6 +18,7 @@ export class BatchMigrator {
    * @param {Function} options.transformer Function to transform MySQL rows to MongoDB documents
    * @param {string} options.idField Primary key field name in MySQL table
    * @param {number} options.batchSize Number of records to process in each batch
+   * @param {boolean} options.continueOnError Whether to continue processing on error
    */
   constructor(options) {
     this.tableName = options.tableName;
@@ -25,10 +26,12 @@ export class BatchMigrator {
     this.transformer = options.transformer;
     this.idField = options.idField || 'id';
     this.batchSize = options.batchSize || 500;
+    this.continueOnError = options.continueOnError !== undefined ? options.continueOnError : true;
     this.stats = {
       processed: 0,
       succeeded: 0,
       failed: 0,
+      failedIds: [],
       startTime: null,
       endTime: null
     };
@@ -38,14 +41,17 @@ export class BatchMigrator {
    * Run the migration
    * @param {boolean} skipExisting Skip if target collection already has data
    * @param {string} whereClause Optional WHERE clause for filtering MySQL records
+   * @returns {Promise<Object>} Migration statistics
    */
   async run(skipExisting = true, whereClause = '') {
     this.stats.startTime = new Date();
     console.log(`🚀 Starting batch migration: ${this.tableName} → ${this.modelName}`);
     
+    let mysql;
+    
     try {
       // Connect to databases if not already connected
-      const mysql = await connectMySQL();
+      mysql = await connectMySQL();
       await connectMongoDB();
       
       // Get Mongoose model
@@ -88,6 +94,8 @@ export class BatchMigrator {
         
         // Transform and prepare documents
         const documents = [];
+        const batchErrors = [];
+        
         for (const row of rows) {
           try {
             const doc = await this.transformer(row, mysql);
@@ -96,12 +104,23 @@ export class BatchMigrator {
             }
             this.stats.processed++;
           } catch (error) {
-            console.error(`❌ Error transforming ${this.tableName} record:`, error.message);
             this.stats.failed++;
+            this.stats.failedIds.push(row[this.idField]);
+            batchErrors.push({
+              id: row[this.idField],
+              error: error.message
+            });
+            
+            console.error(`❌ Error transforming ${this.tableName} record ${row[this.idField]}:`, error.message);
+            
+            // Stop processing if continueOnError is false
+            if (!this.continueOnError) {
+              throw new Error(`Failed to transform record ${row[this.idField]}: ${error.message}`);
+            }
           }
         }
         
-        // Insert documents in bulk
+        // Insert documents in bulk if any processed successfully
         if (documents.length > 0) {
           try {
             await Model.insertMany(documents, { ordered: false });
@@ -109,14 +128,40 @@ export class BatchMigrator {
           } catch (error) {
             if (error.name === 'BulkWriteError') {
               // Some documents may have been inserted even with errors
-              this.stats.succeeded += error.result.nInserted;
-              this.stats.failed += (documents.length - error.result.nInserted);
-              console.error(`⚠️ Partial batch insert: ${error.result.nInserted}/${documents.length} inserted`);
+              this.stats.succeeded += error.result.nInserted || 0;
+              this.stats.failed += (documents.length - (error.result.nInserted || 0));
+              
+              // Add failed IDs if available
+              if (error.writeErrors) {
+                for (const writeError of error.writeErrors) {
+                  const index = writeError.index;
+                  if (index >= 0 && index < documents.length) {
+                    const doc = documents[index];
+                    this.stats.failedIds.push(doc[this.idField]);
+                    batchErrors.push({
+                      id: doc[this.idField],
+                      error: writeError.errmsg
+                    });
+                  }
+                }
+              }
+              
+              console.error(`⚠️ Partial batch insert: ${error.result.nInserted || 0}/${documents.length} inserted`);
             } else {
-              console.error(`❌ Error inserting batch:`, error.message);
               this.stats.failed += documents.length;
+              console.error(`❌ Error inserting batch:`, error.message);
+              
+              // Stop processing if continueOnError is false
+              if (!this.continueOnError) {
+                throw error;
+              }
             }
           }
+        }
+        
+        // Log batch errors summary if any
+        if (batchErrors.length > 0) {
+          console.error(`⚠️ Batch ${batch + 1} had ${batchErrors.length} errors`);
         }
         
         // Progress update
@@ -127,17 +172,33 @@ export class BatchMigrator {
       console.log(`🎉 Migration complete: ${this.tableName} → ${this.modelName}`);
       console.log(`📊 Processed: ${this.stats.processed}, Succeeded: ${this.stats.succeeded}, Failed: ${this.stats.failed}`);
       
-      await mysql.end();
+      if (this.stats.failed > 0) {
+        console.error(`⚠️ Failed IDs: ${this.stats.failedIds.slice(0, 10).join(', ')}${this.stats.failedIds.length > 10 ? '...' : ''}`);
+      }
+      
     } catch (error) {
       console.error(`❌ Migration error:`, error.message);
       this.stats.failed += (this.stats.processed - this.stats.succeeded);
+      throw error;
+    } finally {
+      if (mysql) {
+        await mysql.end();
+      }
+      
+      this.stats.endTime = new Date();
+      const durationMs = this.stats.endTime - this.stats.startTime;
+      const durationSec = Math.round(durationMs / 1000);
+      console.log(`⏱️ Migration took ${durationSec} seconds`);
     }
     
-    this.stats.endTime = new Date();
-    const durationMs = this.stats.endTime - this.stats.startTime;
-    const durationSec = Math.round(durationMs / 1000);
-    console.log(`⏱️ Migration took ${durationSec} seconds`);
-    
     return this.stats;
+  }
+  
+  /**
+   * Get IDs of failed records
+   * @returns {Array<number|string>} Array of failed record IDs
+   */
+  getFailedIds() {
+    return this.stats.failedIds;
   }
 }

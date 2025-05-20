@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 
 const addressSchema = new mongoose.Schema({
-  address_id: { type: Number, unique: true },
+  address_id: { type: Number }, // No unique constraint
   firstname: String,
   lastname: String,
   company: String,
@@ -16,16 +16,17 @@ const addressSchema = new mongoose.Schema({
 });
 
 const customerSchema = new mongoose.Schema({
-  customer_id: { type: Number, unique: true, required: true, index: true },
+  customer_id: { type: Number, required: true, index: true },
+  imported_id: { type: Number, unique: true }, // Use a separate field for the unique constraint
   customer_group_id: { type: Number, default: 1 },
   store_id: { type: Number, default: 0 },
   language_id: { type: Number, default: 1 },
-  firstname: { type: String, required: true },
-  lastname: { type: String, required: true },
-  email: { type: String, required: true, unique: true, index: true },
-  telephone: { type: String, required: true },
+  firstname: { type: String },
+  lastname: { type: String },
+  email: { type: String, sparse: true }, // Use sparse index instead of unique
+  telephone: { type: String },
   fax: String,
-  password: { type: String, required: true },
+  password: { type: String },
   salt: String,
   cart: mongoose.Schema.Types.Mixed,
   wishlist: [Number],
@@ -50,18 +51,20 @@ const customerSchema = new mongoose.Schema({
   last_login: Date,
   last_ip: String,
   total_logins: { type: Number, default: 0 },
-  total_orders: { type: Number, default: 0 }
+  total_orders: { type: Number, default: 0 },
+  
+  // Migration info
+  migration_notes: [String]
 }, { 
   collection: 'customers',
   timestamps: true
 });
 
-// Create indexes
-customerSchema.index({ email: 1 }, { unique: true });
+// Create indexes 
+customerSchema.index({ customer_id: 1 }, { unique: true });
+customerSchema.index({ email: 1 }, { sparse: true });
 customerSchema.index({ status: 1 });
 customerSchema.index({ date_added: -1 });
-customerSchema.index({ 'addresses.country_id': 1 });
-customerSchema.index({ 'addresses.zone_id': 1 });
 
 // Add full text search
 customerSchema.index({

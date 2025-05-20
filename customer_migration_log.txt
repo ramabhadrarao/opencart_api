@@ -1,0 +1,10 @@
+Customer Migration Log - 2025-05-20T13:01:55.649Z
+
+
+
+Migration Summary:
+Total customers: 22605
+Successfully migrated: 22605
+Failed: 0
+Duplicates: 0
+Address issues: 20001
