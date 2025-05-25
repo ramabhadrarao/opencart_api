@@ -1,15 +1,17 @@
-// routes/search.routes.js
+// routes/search.routes.js - ENHANCED
 import express from 'express';
-import { 
-  searchProducts, 
-  getSearchFilters,
-  getPopularSearches
-} from '../controllers/search.controller.js';
+import searchController from '../controllers/search.controller.js';
+import { authenticateAdmin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/', searchProducts);
-router.get('/filters', getSearchFilters);
-router.get('/popular', getPopularSearches); // New endpoint
+// Public search routes
+router.get('/', searchController.searchProducts);
+router.get('/suggestions', searchController.getSearchSuggestions);
+router.get('/filters', searchController.getSearchFilters);
+router.get('/popular', searchController.getPopularSearches);
+
+// Admin analytics
+router.get('/analytics', authenticateAdmin, searchController.getSearchAnalytics);
 
 export default router;

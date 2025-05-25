@@ -9,6 +9,8 @@ import { connectMongoDB } from './config/db.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger.js';
 
+// Import ID generation service
+import { initializeIdService } from './utils/idGenerator.js';
 // Middleware
 import { requestLogger } from './middleware/logger.middleware.js';
 import { apiLimiter, authLimiter } from './middleware/rate-limit.middleware.js';
@@ -129,8 +131,23 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 connectMongoDB()
-  .then(() => {
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    
+    // 🚀 INITIALIZE ID GENERATION SERVICE
+    try {
+      await initializeIdService();
+      console.log('✅ ID generation service ready');
+    } catch (error) {
+      console.error('❌ Failed to initialize ID service:', error);
+      // You can choose to exit here or continue without the service
+      // process.exit(1);
+    }
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 All services initialized and ready`);
+    });
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err.message);
