@@ -2,6 +2,7 @@
 import express from 'express';
 import manufacturerController from '../controllers/manufacturer.controller.js';
 import { authenticateAdmin } from '../middleware/auth.middleware.js';
+import auditLogService from '../utils/auditLogService.js'; // ADD THIS
 
 const router = express.Router();
 
