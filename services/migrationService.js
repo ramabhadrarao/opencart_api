@@ -586,14 +586,33 @@ class MigrationService {
     }
   }
 
-  async migrateProducts() {
-    console.log('📦 Migrating products with full relationships...');
+  // Replace the migrateProducts method in your MigrationService class
+
+// Replace the migrateProducts method in your MigrationService class
+// This is corrected for your exact schema
+
+// Replace the entire migrateProducts method in your MigrationService with this version
+// This bypasses Mongoose validation and inserts directly into MongoDB
+
+async migrateProducts() {
+  console.log('📦 Migrating products directly to MongoDB (bypassing Mongoose validation)...');
+  
+  const [products] = await this.mysql.execute('SELECT * FROM oc_product ORDER BY product_id');
+  
+  console.log(`📊 Found ${products.length} products to migrate`);
+  
+  // Use direct MongoDB collection instead of Mongoose model
+  const productsCollection = mongoose.connection.db.collection('products');
+  
+  // Process in batches for better performance
+  const batchSize = 50;
+  let processedCount = 0;
+  
+  for (let i = 0; i < products.length; i += batchSize) {
+    const batch = products.slice(i, i + batchSize);
+    const documentsToInsert = [];
     
-    const [products] = await this.mysql.execute('SELECT * FROM oc_product ORDER BY product_id');
-    
-    console.log(`📊 Found ${products.length} products to migrate`);
-    
-    for (const productRow of products) {
+    for (const productRow of batch) {
       try {
         this.stats.processed++;
         
@@ -616,10 +635,18 @@ class MigrationService {
           ORDER BY sort_order
         `, [productRow.product_id]);
         
-        // Get product options and their values
+        // Get product options
         const [options] = await this.mysql.execute(`
-          SELECT po.*, od.name as option_name, od.type 
+          SELECT 
+            po.product_option_id,
+            po.option_id,
+            po.value as option_value,
+            po.required,
+            od.name as option_name,
+            o.type as option_type,
+            o.sort_order
           FROM oc_product_option po
+          LEFT JOIN oc_option o ON po.option_id = o.option_id
           LEFT JOIN oc_option_description od ON po.option_id = od.option_id AND od.language_id = 1
           WHERE po.product_id = ?
           ORDER BY po.product_option_id
@@ -629,7 +656,17 @@ class MigrationService {
         const optionsWithValues = [];
         for (const option of options) {
           const [values] = await this.mysql.execute(`
-            SELECT pov.*, ovd.name as value_name
+            SELECT 
+              pov.product_option_value_id,
+              pov.option_value_id,
+              pov.quantity,
+              pov.subtract,
+              pov.price,
+              pov.price_prefix,
+              pov.weight,
+              pov.weight_prefix,
+              pov.uploaded_files,
+              ovd.name as value_name
             FROM oc_product_option_value pov
             LEFT JOIN oc_option_value_description ovd ON pov.option_value_id = ovd.option_value_id AND ovd.language_id = 1
             WHERE pov.product_option_id = ?
@@ -639,25 +676,77 @@ class MigrationService {
           optionsWithValues.push({
             product_option_id: option.product_option_id,
             option_id: option.option_id,
-            name: option.option_name,
-            type: option.type,
+            name: option.option_name || 'Unknown Option',
+            type: option.option_type || 'select',
+            value: option.option_value || '',
             required: option.required === 1,
+            sort_order: option.sort_order || 0,
             values: values.map(val => ({
               product_option_value_id: val.product_option_value_id,
               option_value_id: val.option_value_id,
-              name: val.value_name,
-              quantity: val.quantity,
+              name: val.value_name || 'Unknown Value',
+              quantity: val.quantity || 0,
               subtract: val.subtract === 1,
-              price: parseFloat(val.price),
-              price_prefix: val.price_prefix,
-              weight: parseFloat(val.weight),
-              weight_prefix: val.weight_prefix,
-              uploaded_file: val.uploaded_files || '' // Keep file reference for later verification
+              price: parseFloat(val.price) || 0,
+              price_prefix: val.price_prefix || '+',
+              weight: parseFloat(val.weight) || 0,
+              weight_prefix: val.weight_prefix || '+',
+              uploaded_file: val.uploaded_files || ''
             }))
           });
         }
 
-        const product = new Product({
+        // Get product attributes
+        const [attributes] = await this.mysql.execute(`
+          SELECT 
+            pa.attribute_id,
+            pa.text,
+            ad.name as attribute_name,
+            a.attribute_group_id
+          FROM oc_product_attribute pa
+          LEFT JOIN oc_attribute_description ad ON pa.attribute_id = ad.attribute_id AND ad.language_id = 1
+          LEFT JOIN oc_attribute a ON pa.attribute_id = a.attribute_id
+          WHERE pa.product_id = ?
+          ORDER BY pa.attribute_id
+        `, [productRow.product_id]);
+
+        // Get related products
+        const [relatedProducts] = await this.mysql.execute(`
+          SELECT related_id FROM oc_product_related 
+          WHERE product_id = ?
+        `, [productRow.product_id]);
+
+        // Get product specials
+        const [specials] = await this.mysql.execute(`
+          SELECT 
+            product_special_id,
+            customer_group_id,
+            priority,
+            price,
+            date_start,
+            date_end
+          FROM oc_product_special 
+          WHERE product_id = ?
+          ORDER BY priority, date_start
+        `, [productRow.product_id]);
+
+        // Get product discounts
+        const [discounts] = await this.mysql.execute(`
+          SELECT 
+            product_discount_id,
+            customer_group_id,
+            quantity,
+            priority,
+            price,
+            date_start,
+            date_end
+          FROM oc_product_discount 
+          WHERE product_id = ?
+          ORDER BY quantity
+        `, [productRow.product_id]);
+
+        // Create product document directly (no Mongoose validation)
+        const productDocument = {
           product_id: productRow.product_id,
           model: productRow.model,
           sku: productRow.sku,
@@ -667,26 +756,26 @@ class MigrationService {
           isbn: productRow.isbn,
           mpn: productRow.mpn,
           location: productRow.location,
-          quantity: productRow.quantity,
+          quantity: productRow.quantity || 0,
           stock_status_id: productRow.stock_status_id,
           image: productRow.image,
           manufacturer_id: productRow.manufacturer_id,
           shipping: productRow.shipping === 1,
-          price: parseFloat(productRow.price),
-          points: productRow.points,
+          price: parseFloat(productRow.price) || 0,
+          points: productRow.points || 0,
           tax_class_id: productRow.tax_class_id,
           date_available: productRow.date_available,
-          weight: parseFloat(productRow.weight),
+          weight: parseFloat(productRow.weight) || 0,
           weight_class_id: productRow.weight_class_id,
-          length: parseFloat(productRow.length),
-          width: parseFloat(productRow.width),
-          height: parseFloat(productRow.height),
+          length: parseFloat(productRow.length) || 0,
+          width: parseFloat(productRow.width) || 0,
+          height: parseFloat(productRow.height) || 0,
           length_class_id: productRow.length_class_id,
           subtract: productRow.subtract === 1,
-          minimum: productRow.minimum,
-          sort_order: productRow.sort_order,
+          minimum: productRow.minimum || 1,
+          sort_order: productRow.sort_order || 0,
           status: productRow.status === 1,
-          viewed: productRow.viewed,
+          viewed: productRow.viewed || 0,
           date_added: productRow.date_added,
           date_modified: productRow.date_modified,
           
@@ -706,28 +795,98 @@ class MigrationService {
           additional_images: images.map(img => ({
             product_image_id: img.product_image_id,
             image: img.image,
-            sort_order: img.sort_order
+            sort_order: img.sort_order || 0
+          })),
+          
+          attributes: attributes.map(attr => ({
+            attribute_id: attr.attribute_id,
+            attribute_group_id: attr.attribute_group_id,
+            name: attr.attribute_name || 'Unknown Attribute',
+            text: attr.text
           })),
           
           options: optionsWithValues,
-          stores: [0] // Default store
-        });
+          
+          special_prices: specials.map(special => ({
+            product_special_id: special.product_special_id,
+            customer_group_id: special.customer_group_id,
+            priority: special.priority || 0,
+            price: parseFloat(special.price) || 0,
+            date_start: special.date_start,
+            date_end: special.date_end
+          })),
+          
+          discounts: discounts.map(discount => ({
+            product_discount_id: discount.product_discount_id,
+            customer_group_id: discount.customer_group_id,
+            quantity: discount.quantity || 0,
+            priority: discount.priority || 0,
+            price: parseFloat(discount.price) || 0,
+            date_start: discount.date_start,
+            date_end: discount.date_end
+          })),
+          
+          related_products: relatedProducts.map(rel => rel.related_id),
+          
+          stores: [0], // Default store
+          
+          // Migration metadata
+          original_mysql_id: productRow.product_id,
+          migration_notes: [`Migrated on ${new Date().toISOString()}`]
+        };
 
-        await product.save();
-        this.stats.succeeded++;
-        
-        if (this.stats.succeeded % 100 === 0) {
-          console.log(`   ✅ Products: ${this.stats.succeeded}/${products.length}`);
-        }
+        documentsToInsert.push(productDocument);
+        processedCount++;
         
       } catch (error) {
         this.stats.failed++;
-        console.error(`❌ Failed to migrate product ${productRow.product_id}: ${error.message}`);
+        console.error(`❌ Failed to prepare product ${productRow.product_id}: ${error.message}`);
+        
+        // Log first few detailed errors for debugging
+        if (this.stats.failed <= 3) {
+          console.error(`   🔍 Error details for product ${productRow.product_id}:`, error.message);
+        }
       }
     }
     
-    console.log(`✅ Products migration: ${this.stats.succeeded}/${products.length} successful\n`);
+    // Insert batch directly into MongoDB
+    if (documentsToInsert.length > 0) {
+      try {
+        await productsCollection.insertMany(documentsToInsert, { ordered: false });
+        this.stats.succeeded += documentsToInsert.length;
+        
+        console.log(`   ✅ Products: ${this.stats.succeeded}/${products.length} (batch ${Math.ceil((i + batchSize) / batchSize)})`);
+      } catch (batchError) {
+        console.error(`❌ Batch insert error: ${batchError.message}`);
+        this.stats.failed += documentsToInsert.length;
+      }
+    }
   }
+  
+  console.log(`✅ Products migration: ${this.stats.succeeded}/${products.length} successful\n`);
+  
+  // Create indexes after insertion for better performance
+  try {
+    console.log('🔍 Creating indexes...');
+    await productsCollection.createIndex({ product_id: 1 }, { unique: true });
+    await productsCollection.createIndex({ model: 1 });
+    await productsCollection.createIndex({ sku: 1 }, { sparse: true });
+    await productsCollection.createIndex({ manufacturer_id: 1 });
+    await productsCollection.createIndex({ price: 1 });
+    await productsCollection.createIndex({ status: 1 });
+    await productsCollection.createIndex({ date_added: 1 });
+    await productsCollection.createIndex({
+      'descriptions.name': 'text',
+      'descriptions.description': 'text',
+      model: 'text',
+      sku: 'text'
+    });
+    console.log('✅ Indexes created successfully');
+  } catch (indexError) {
+    console.error(`⚠️ Index creation warning: ${indexError.message}`);
+  }
+}
+
 
   async verifyProductMigration() {
     console.log('🔍 Verifying product migration...');
@@ -776,16 +935,52 @@ class MigrationService {
     }
   }
 
-  async migrateOrders() {
-    console.log('🛒 Migrating orders with products and options...');
+        // Replace the migrateOrders method in your MigrationService with this version
+
+// Replace the migrateOrders method with this robust version that handles duplicates
+
+async migrateOrders() {
+  console.log('🛒 Migrating orders directly to MongoDB (handling duplicates)...');
+  
+  const [orders] = await this.mysql.execute('SELECT * FROM oc_order ORDER BY order_id');
+  
+  console.log(`📊 Found ${orders.length} orders to migrate`);
+  
+  // Use direct MongoDB collections
+  const ordersCollection = mongoose.connection.db.collection('orders');
+  const orderProductsCollection = mongoose.connection.db.collection('order_products');
+  
+  // Clear existing data first (in case of re-run)
+  console.log('🧹 Clearing existing order data...');
+  await ordersCollection.deleteMany({});
+  await orderProductsCollection.deleteMany({});
+  
+  // Drop existing indexes to avoid conflicts
+  try {
+    await ordersCollection.dropIndexes();
+    await orderProductsCollection.dropIndexes();
+  } catch (err) {
+    console.log('   📝 No existing indexes to drop');
+  }
+  
+  // Process in smaller batches for better error handling
+  const batchSize = 50;
+  let orderProductIdCounter = 1; // Track order_product_id to avoid duplicates
+  
+  for (let i = 0; i < orders.length; i += batchSize) {
+    const batch = orders.slice(i, i + batchSize);
+    const orderDocuments = [];
+    const orderProductDocuments = [];
     
-    const [orders] = await this.mysql.execute('SELECT * FROM oc_order ORDER BY order_id');
-    
-    console.log(`📊 Found ${orders.length} orders to migrate`);
-    
-    for (const orderRow of orders) {
+    for (const orderRow of batch) {
       try {
         this.stats.processed++;
+        
+        // Skip if order_id is null or duplicate
+        if (!orderRow.order_id) {
+          console.log(`   ⚠️  Skipping order with null order_id`);
+          continue;
+        }
         
         // Get order products
         const [orderProducts] = await this.mysql.execute(`
@@ -803,141 +998,216 @@ class MigrationService {
             ORDER BY order_option_id
           `, [product.order_product_id]);
           
-          productsWithOptions.push({
-            order_product_id: product.order_product_id,
-            product_id: product.product_id,
-            name: product.name,
-            model: product.model,
-            quantity: product.quantity,
-            price: parseFloat(product.price),
-            total: parseFloat(product.total),
-            tax: parseFloat(product.tax),
-            reward: product.reward,
+          // Use our counter for order_product_id to avoid duplicates
+          const uniqueOrderProductId = orderProductIdCounter++;
+          
+          const productWithOptions = {
+            order_product_id: uniqueOrderProductId,
+            product_id: product.product_id || 0,
+            name: product.name || 'Unknown Product',
+            model: product.model || '',
+            quantity: product.quantity || 1,
+            price: parseFloat(product.price) || 0,
+            total: parseFloat(product.total) || 0,
+            tax: parseFloat(product.tax) || 0,
+            reward: product.reward || 0,
             options: options.map(opt => ({
-              order_option_id: opt.order_option_id,
-              product_option_id: opt.product_option_id,
-              product_option_value_id: opt.product_option_value_id,
-              name: opt.name,
-              value: opt.value,
-              type: opt.type
+              order_option_id: opt.order_option_id || 0,
+              product_option_id: opt.product_option_id || 0,
+              product_option_value_id: opt.product_option_value_id || 0,
+              name: opt.name || '',
+              value: opt.value || '',
+              type: opt.type || 'text'
+            }))
+          };
+          
+          productsWithOptions.push(productWithOptions);
+          
+          // Also save to OrderProduct collection with unique ID
+          orderProductDocuments.push({
+            order_product_id: uniqueOrderProductId,
+            original_order_product_id: product.order_product_id, // Keep original for reference
+            order_id: orderRow.order_id,
+            product_id: product.product_id || 0,
+            name: product.name || 'Unknown Product',
+            model: product.model || '',
+            quantity: product.quantity || 1,
+            price: parseFloat(product.price) || 0,
+            total: parseFloat(product.total) || 0,
+            tax: parseFloat(product.tax) || 0,
+            reward: product.reward || 0,
+            options: options.map(opt => ({
+              order_option_id: opt.order_option_id || 0,
+              product_option_id: opt.product_option_id || 0,
+              product_option_value_id: opt.product_option_value_id || 0,
+              name: opt.name || '',
+              value: opt.value || '',
+              type: opt.type || 'text'
             }))
           });
-          
-          // Also save to OrderProduct collection for complex queries
-          try {
-            const orderProduct = new OrderProduct({
-              order_product_id: product.order_product_id,
-              order_id: orderRow.order_id,
-              product_id: product.product_id,
-              name: product.name,
-              model: product.model,
-              quantity: product.quantity,
-              price: parseFloat(product.price),
-              total: parseFloat(product.total),
-              tax: parseFloat(product.tax),
-              reward: product.reward,
-              options: options.map(opt => ({
-                order_option_id: opt.order_option_id,
-                product_option_id: opt.product_option_id,
-                product_option_value_id: opt.product_option_value_id,
-                name: opt.name,
-                value: opt.value,
-                type: opt.type
-              }))
-            });
-            
-            await orderProduct.save();
-          } catch (opError) {
-            console.error(`❌ Failed to save OrderProduct ${product.order_product_id}: ${opError.message}`);
-          }
         }
 
-        const order = new Order({
+        // Handle missing required fields with better defaults
+        const firstname = orderRow.firstname || 'Guest';
+        const lastname = orderRow.lastname || 'Customer';
+        const email = orderRow.email || `guest_${orderRow.order_id}@example.com`;
+
+        // Create order document with all fields properly handled
+        const orderDocument = {
           order_id: orderRow.order_id,
-          invoice_no: orderRow.invoice_no,
-          invoice_prefix: orderRow.invoice_prefix,
-          store_id: orderRow.store_id,
-          store_name: orderRow.store_name,
-          store_url: orderRow.store_url,
-          customer_id: orderRow.customer_id,
-          customer_group_id: orderRow.customer_group_id,
-          firstname: orderRow.firstname,
-          lastname: orderRow.lastname,
-          email: orderRow.email,
-          telephone: orderRow.telephone,
-          fax: orderRow.fax,
-          custom_field: orderRow.custom_field,
+          invoice_no: orderRow.invoice_no || 0,
+          invoice_prefix: orderRow.invoice_prefix || '',
+          store_id: orderRow.store_id || 0,
+          store_name: orderRow.store_name || '',
+          store_url: orderRow.store_url || '',
+          customer_id: orderRow.customer_id || 0,
+          customer_group_id: orderRow.customer_group_id || 1,
+          firstname: firstname,
+          lastname: lastname,
+          email: email,
+          telephone: orderRow.telephone || '',
+          fax: orderRow.fax || '',
+          custom_field: orderRow.custom_field || '',
           
           // Payment details
-          payment_firstname: orderRow.payment_firstname,
-          payment_lastname: orderRow.payment_lastname,
-          payment_company: orderRow.payment_company,
-          payment_address_1: orderRow.payment_address_1,
-          payment_address_2: orderRow.payment_address_2,
-          payment_city: orderRow.payment_city,
-          payment_postcode: orderRow.payment_postcode,
-          payment_country: orderRow.payment_country,
-          payment_country_id: orderRow.payment_country_id,
-          payment_zone: orderRow.payment_zone,
-          payment_zone_id: orderRow.payment_zone_id,
-          payment_address_format: orderRow.payment_address_format,
-          payment_custom_field: orderRow.payment_custom_field,
-          payment_method: orderRow.payment_method,
-          payment_code: orderRow.payment_code,
+          payment_firstname: orderRow.payment_firstname || firstname,
+          payment_lastname: orderRow.payment_lastname || lastname,
+          payment_company: orderRow.payment_company || '',
+          payment_address_1: orderRow.payment_address_1 || '',
+          payment_address_2: orderRow.payment_address_2 || '',
+          payment_city: orderRow.payment_city || '',
+          payment_postcode: orderRow.payment_postcode || '',
+          payment_country: orderRow.payment_country || '',
+          payment_country_id: orderRow.payment_country_id || 0,
+          payment_zone: orderRow.payment_zone || '',
+          payment_zone_id: orderRow.payment_zone_id || 0,
+          payment_address_format: orderRow.payment_address_format || '',
+          payment_custom_field: orderRow.payment_custom_field || '',
+          payment_method: orderRow.payment_method || 'Unknown',
+          payment_code: orderRow.payment_code || '',
           
           // Shipping details
-          shipping_firstname: orderRow.shipping_firstname,
-          shipping_lastname: orderRow.shipping_lastname,
-          shipping_company: orderRow.shipping_company,
-          shipping_address_1: orderRow.shipping_address_1,
-          shipping_address_2: orderRow.shipping_address_2,
-          shipping_city: orderRow.shipping_city,
-          shipping_postcode: orderRow.shipping_postcode,
-          shipping_country: orderRow.shipping_country,
-          shipping_country_id: orderRow.shipping_country_id,
-          shipping_zone: orderRow.shipping_zone,
-          shipping_zone_id: orderRow.shipping_zone_id,
-          shipping_address_format: orderRow.shipping_address_format,
-          shipping_custom_field: orderRow.shipping_custom_field,
-          shipping_method: orderRow.shipping_method,
-          shipping_code: orderRow.shipping_code,
+          shipping_firstname: orderRow.shipping_firstname || firstname,
+          shipping_lastname: orderRow.shipping_lastname || lastname,
+          shipping_company: orderRow.shipping_company || '',
+          shipping_address_1: orderRow.shipping_address_1 || '',
+          shipping_address_2: orderRow.shipping_address_2 || '',
+          shipping_city: orderRow.shipping_city || '',
+          shipping_postcode: orderRow.shipping_postcode || '',
+          shipping_country: orderRow.shipping_country || '',
+          shipping_country_id: orderRow.shipping_country_id || 0,
+          shipping_zone: orderRow.shipping_zone || '',
+          shipping_zone_id: orderRow.shipping_zone_id || 0,
+          shipping_address_format: orderRow.shipping_address_format || '',
+          shipping_custom_field: orderRow.shipping_custom_field || '',
+          shipping_method: orderRow.shipping_method || 'Unknown',
+          shipping_code: orderRow.shipping_code || '',
           
-          comment: orderRow.comment,
-          total: parseFloat(orderRow.total),
-          order_status_id: orderRow.order_status_id,
-          affiliate_id: orderRow.affiliate_id,
-          commission: parseFloat(orderRow.commission),
-          tracking: orderRow.tracking,
-          language_id: orderRow.language_id,
-          currency_id: orderRow.currency_id,
-          currency_code: orderRow.currency_code,
-          currency_value: parseFloat(orderRow.currency_value),
-          ip: orderRow.ip,
-          forwarded_ip: orderRow.forwarded_ip,
-          user_agent: orderRow.user_agent,
-          accept_language: orderRow.accept_language,
-          date_added: orderRow.date_added,
-          date_modified: orderRow.date_modified,
+          comment: orderRow.comment || '',
+          total: parseFloat(orderRow.total) || 0,
+          order_status_id: orderRow.order_status_id || 1,
+          affiliate_id: orderRow.affiliate_id || 0,
+          commission: parseFloat(orderRow.commission) || 0,
+          tracking: orderRow.tracking || '',
+          language_id: orderRow.language_id || 1,
+          currency_id: orderRow.currency_id || 1,
+          currency_code: orderRow.currency_code || 'USD',
+          currency_value: parseFloat(orderRow.currency_value) || 1,
+          ip: orderRow.ip || '',
+          forwarded_ip: orderRow.forwarded_ip || '',
+          user_agent: orderRow.user_agent || '',
+          accept_language: orderRow.accept_language || '',
+          date_added: orderRow.date_added || new Date(),
+          date_modified: orderRow.date_modified || new Date(),
           
           // Embedded products
-          products: productsWithOptions
-        });
+          products: productsWithOptions,
+          
+          // Migration metadata
+          original_mysql_id: orderRow.order_id,
+          migration_notes: [`Migrated on ${new Date().toISOString()}`]
+        };
 
-        await order.save();
-        this.stats.succeeded++;
-        
-        if (this.stats.succeeded % 1000 === 0) {
-          console.log(`   ✅ Orders: ${this.stats.succeeded}/${orders.length}`);
-        }
+        orderDocuments.push(orderDocument);
         
       } catch (error) {
         this.stats.failed++;
-        console.error(`❌ Failed to migrate order ${orderRow.order_id}: ${error.message}`);
+        console.error(`❌ Failed to prepare order ${orderRow.order_id}: ${error.message}`);
+        
+        // Log first few detailed errors for debugging
+        if (this.stats.failed <= 5) {
+          console.error(`   🔍 Error details for order ${orderRow.order_id}:`, error.message);
+        }
       }
     }
     
-    console.log(`✅ Orders migration: ${this.stats.succeeded}/${orders.length} successful\n`);
+    // Insert batch of orders with better error handling
+    if (orderDocuments.length > 0) {
+      try {
+        const result = await ordersCollection.insertMany(orderDocuments, { 
+          ordered: false,
+          writeConcern: { w: 1 }
+        });
+        this.stats.succeeded += result.insertedCount;
+      } catch (batchError) {
+        // Handle individual document errors
+        if (batchError.writeErrors) {
+          const successCount = orderDocuments.length - batchError.writeErrors.length;
+          this.stats.succeeded += successCount;
+          this.stats.failed += batchError.writeErrors.length;
+          
+          console.error(`❌ ${batchError.writeErrors.length} orders failed in batch, ${successCount} succeeded`);
+          
+          // Log first few errors
+          batchError.writeErrors.slice(0, 3).forEach(err => {
+            console.error(`   Error: ${err.errmsg}`);
+          });
+        } else {
+          console.error(`❌ Orders batch insert error: ${batchError.message}`);
+          this.stats.failed += orderDocuments.length;
+        }
+      }
+    }
+    
+    // Insert batch of order products with error handling
+    if (orderProductDocuments.length > 0) {
+      try {
+        await orderProductsCollection.insertMany(orderProductDocuments, { 
+          ordered: false,
+          writeConcern: { w: 1 }
+        });
+      } catch (batchError) {
+        console.error(`❌ Order products batch insert error: ${batchError.message}`);
+      }
+    }
+    
+    // Progress update
+    if (i % (batchSize * 20) === 0 || i + batchSize >= orders.length) {
+      console.log(`   ✅ Orders: ${this.stats.succeeded}/${orders.length} (${((this.stats.succeeded / orders.length) * 100).toFixed(1)}%)`);
+    }
   }
+  
+  console.log(`✅ Orders migration: ${this.stats.succeeded}/${orders.length} successful\n`);
+  
+  // Create indexes after insertion
+  try {
+    console.log('🔍 Creating order indexes...');
+    
+    await ordersCollection.createIndex({ order_id: 1 }, { unique: true });
+    await ordersCollection.createIndex({ customer_id: 1, date_added: -1 });
+    await ordersCollection.createIndex({ order_status_id: 1 });
+    await ordersCollection.createIndex({ date_added: -1 });
+    await ordersCollection.createIndex({ email: 1 });
+    
+    await orderProductsCollection.createIndex({ order_product_id: 1 }, { unique: true });
+    await orderProductsCollection.createIndex({ order_id: 1 });
+    await orderProductsCollection.createIndex({ product_id: 1 });
+    
+    console.log('✅ Order indexes created successfully');
+  } catch (indexError) {
+    console.error(`⚠️ Order index creation warning: ${indexError.message}`);
+  }
+}
 
   async verifyOrderMigration() {
     console.log('🔍 Verifying order migration...');

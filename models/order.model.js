@@ -1,3 +1,5 @@
+// Replace your models/order.model.js with this corrected version
+
 import mongoose from 'mongoose';
 
 const orderItemSchema = new mongoose.Schema({
@@ -11,7 +13,7 @@ const orderItemSchema = new mongoose.Schema({
   tax: Number,
   reward: Number,
   
-  // Options for this order item
+  // CORRECTED Options for this order item
   options: [{
     order_option_id: Number,
     product_option_id: Number,
@@ -32,7 +34,7 @@ const orderSchema = new mongoose.Schema({
   customer_id: { type: Number, default: 0 },
   customer_group_id: Number,
   firstname: { type: String, required: true },
-  lastname: { type: String, required: true },
+  lastname: { type: String, required: true },  // Keep required but handle in migration
   email: { type: String, required: true },
   telephone: String,
   fax: String,

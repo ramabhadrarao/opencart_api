@@ -65,7 +65,9 @@ const productSchema = new mongoose.Schema({
     option_id: Number,
     name: String,
     type: String,
+    value: String,        // ✅ Good - this was missing before
     required: Boolean,
+    sort_order: Number,   // ✅ Good - this was missing before  
     values: [{
       product_option_value_id: Number,
       option_value_id: Number,
@@ -80,8 +82,10 @@ const productSchema = new mongoose.Schema({
     }]
   }],
   
+  // ⚠️ CORRECTED: Added missing customer_group_id field
   discounts: [{
     product_discount_id: Number,
+    customer_group_id: Number,  // ← This was missing in your version
     quantity: Number,
     priority: Number,
     price: Number,
