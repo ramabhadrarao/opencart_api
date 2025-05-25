@@ -109,70 +109,75 @@ class MigrationService {
   }
 
   async migrateCountries() {
-    console.log('📍 Migrating countries...');
-    
-    const [rows] = await this.mysql.execute('SELECT * FROM oc_country ORDER BY country_id');
-    
-    for (const row of rows) {
-      try {
-        this.stats.processed++;
-        
-        const country = new Country({
-          country_id: row.country_id,
-          name: row.name,
-          iso_code_2: row.iso_code_2,
-          iso_code_3: row.iso_code_3,
-          address_format: row.address_format,
-          postcode_required: row.postcode_required === 1,
-          status: row.status === 1
-        });
+  console.log('📍 Migrating countries...');
+  
+  const [rows] = await this.mysql.execute('SELECT * FROM oc_country ORDER BY country_id');
+  let countryCount = 0;
+  
+  for (const row of rows) {
+    try {
+      this.stats.processed++;
+      
+      const country = new Country({
+        country_id: row.country_id,
+        name: row.name,
+        iso_code_2: row.iso_code_2,
+        iso_code_3: row.iso_code_3,
+        address_format: row.address_format,
+        postcode_required: row.postcode_required === 1,
+        status: row.status === 1
+      });
 
-        await country.save();
-        this.stats.succeeded++;
-        
-        if (this.stats.succeeded % 50 === 0) {
-          console.log(`   ✅ Countries: ${this.stats.succeeded}/${rows.length}`);
-        }
-      } catch (error) {
-        this.stats.failed++;
-        console.error(`❌ Failed to migrate country ${row.country_id}: ${error.message}`);
+      await country.save();
+      this.stats.succeeded++;
+      countryCount++;
+      
+      if (countryCount % 50 === 0) {
+        console.log(`   ✅ Countries: ${countryCount}/${rows.length}`);
       }
+    } catch (error) {
+      this.stats.failed++;
+      console.error(`❌ Failed to migrate country ${row.country_id}: ${error.message}`);
     }
-    
-    console.log(`✅ Countries migration: ${this.stats.succeeded}/${rows.length} successful\n`);
   }
+  
+  console.log(`✅ Countries migration: ${countryCount}/${rows.length} successful\n`);
+}
 
   async migrateZones() {
-    console.log('🗺️  Migrating zones...');
-    
-    const [rows] = await this.mysql.execute('SELECT * FROM oc_zone ORDER BY zone_id');
-    
-    for (const row of rows) {
-      try {
-        this.stats.processed++;
-        
-        const zone = new Zone({
-          zone_id: row.zone_id,
-          country_id: row.country_id,
-          name: row.name,
-          code: row.code,
-          status: row.status === 1
-        });
+  console.log('🗺️  Migrating zones...');
+  
+  const [rows] = await this.mysql.execute('SELECT * FROM oc_zone ORDER BY zone_id');
+  const totalZones = rows.length;
+  let zoneCount = 0;
+  
+  for (const row of rows) {
+    try {
+      this.stats.processed++;
+      
+      const zone = new Zone({
+        zone_id: row.zone_id,
+        country_id: row.country_id,
+        name: row.name,
+        code: row.code,
+        status: row.status === 1
+      });
 
-        await zone.save();
-        this.stats.succeeded++;
-        
-        if (this.stats.succeeded % 100 === 0) {
-          console.log(`   ✅ Zones: ${this.stats.succeeded}/${rows.length}`);
-        }
-      } catch (error) {
-        this.stats.failed++;
-        console.error(`❌ Failed to migrate zone ${row.zone_id}: ${error.message}`);
+      await zone.save();
+      this.stats.succeeded++;
+      zoneCount++;
+      
+      if (zoneCount % 100 === 0) {
+        console.log(`   ✅ Zones: ${zoneCount}/${totalZones}`);
       }
+    } catch (error) {
+      this.stats.failed++;
+      console.error(`❌ Failed to migrate zone ${row.zone_id}: ${error.message}`);
     }
-    
-    console.log(`✅ Zones migration: ${this.stats.succeeded}/${rows.length} successful\n`);
   }
+  
+  console.log(`✅ Zones migration: ${zoneCount}/${totalZones} successful\n`);
+}
 
   async migrateBasicLookupTables() {
     // This would include tables like oc_language, oc_currency, etc.

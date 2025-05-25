@@ -186,14 +186,14 @@ async function main() {
   }
   
   const migration = new MigrationService();
-  
+      let success = false;
+
   try {
     // Initialize database connections
     console.log('🔗 Initializing database connections...');
     await migration.initialize();
     console.log('✅ Database connections established\n');
     
-    let success = false;
     
     if (phase === 'all') {
       success = await runAllPhases(migration);
@@ -249,7 +249,8 @@ async function main() {
     console.log('✅ Cleanup completed');
   }
   
-  process.exit(success ? 0 : 1);
+  const finalSuccess = success !== undefined ? success : false;
+  process.exit(finalSuccess ? 0 : 1);
 }
 
 // Handle unhandled promise rejections
