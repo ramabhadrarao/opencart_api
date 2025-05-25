@@ -1,8 +1,7 @@
-// models/customer.model.js
 import mongoose from 'mongoose';
 
 const addressSchema = new mongoose.Schema({
-  address_id: { type: Number }, // No unique constraint
+  address_id: { type: Number },
   firstname: String,
   lastname: String,
   company: String,
@@ -16,14 +15,13 @@ const addressSchema = new mongoose.Schema({
 });
 
 const customerSchema = new mongoose.Schema({
-  customer_id: { type: Number, required: true, index: true },
-  imported_id: { type: Number, unique: true }, // Use a separate field for the unique constraint
+  customer_id: { type: Number, required: true }, // REMOVED unique: true
   customer_group_id: { type: Number, default: 1 },
   store_id: { type: Number, default: 0 },
   language_id: { type: Number, default: 1 },
   firstname: { type: String },
   lastname: { type: String },
-  email: { type: String, sparse: true }, // Use sparse index instead of unique
+  email: { type: String },
   telephone: { type: String },
   fax: String,
   password: { type: String },
@@ -34,17 +32,17 @@ const customerSchema = new mongoose.Schema({
   address_id: { type: Number, default: 0 },
   custom_field: mongoose.Schema.Types.Mixed,
   ip: String,
-  status: { type: Boolean, default: true, index: true },
+  status: { type: Boolean, default: true },
   safe: { type: Boolean, default: false },
   token: String,
   code: String,
-  date_added: { type: Date, default: Date.now, index: true },
+  date_added: { type: Date, default: Date.now },
   
   // For password reset
   reset_token: String,
   reset_token_expiry: Date,
   
-  // Addresses (embedded for better performance)
+  // Addresses (embedded)
   addresses: [addressSchema],
   
   // Additional tracking fields
@@ -53,14 +51,15 @@ const customerSchema = new mongoose.Schema({
   total_logins: { type: Number, default: 0 },
   total_orders: { type: Number, default: 0 },
   
-  // Migration info
+  // Migration verification field
+  original_mysql_id: Number,
   migration_notes: [String]
 }, { 
   collection: 'customers',
   timestamps: true
 });
 
-// Create indexes 
+// Create indexes ONLY with schema.index()
 customerSchema.index({ customer_id: 1 }, { unique: true });
 customerSchema.index({ email: 1 }, { sparse: true });
 customerSchema.index({ status: 1 });

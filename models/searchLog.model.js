@@ -1,4 +1,3 @@
-// models/searchLog.model.js
 import mongoose from 'mongoose';
 
 const searchLogSchema = new mongoose.Schema({
@@ -23,13 +22,10 @@ const searchLogSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now }
 }, { collection: 'search_logs' });
 
-// Create indexes for faster queries
+// Create indexes for faster queries - use ONLY schema.index()
 searchLogSchema.index({ user_id: 1 });
 searchLogSchema.index({ session_id: 1 });
 searchLogSchema.index({ query: 'text' }); // Text index for search terms
-searchLogSchema.index({ created_at: 1 });
-
-// Define a TTL index to automatically remove old records (e.g., 90 days)
 searchLogSchema.index({ created_at: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
 export default mongoose.model('SearchLog', searchLogSchema);

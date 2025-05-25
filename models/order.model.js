@@ -1,9 +1,8 @@
-// models/order.model.js
 import mongoose from 'mongoose';
 
 const orderItemSchema = new mongoose.Schema({
   order_product_id: { type: Number, unique: true },
-  product_id: { type: Number, required: true, index: true },
+  product_id: { type: Number, required: true },
   name: { type: String, required: true },
   model: String,
   quantity: { type: Number, required: true, min: 1 },
@@ -24,13 +23,13 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  order_id: { type: Number, unique: true, required: true, index: true },
+  order_id: { type: Number, unique: true, required: true },
   invoice_no: { type: Number, default: 0 },
   invoice_prefix: String,
   store_id: { type: Number, default: 0 },
   store_name: String,
   store_url: String,
-  customer_id: { type: Number, default: 0, index: true },
+  customer_id: { type: Number, default: 0 },
   customer_group_id: Number,
   firstname: { type: String, required: true },
   lastname: { type: String, required: true },
@@ -75,7 +74,7 @@ const orderSchema = new mongoose.Schema({
   
   comment: String,
   total: { type: Number, required: true },
-  order_status_id: { type: Number, default: 1, index: true },
+  order_status_id: { type: Number, default: 1 },
   affiliate_id: Number,
   commission: Number,
   tracking: String,
@@ -87,7 +86,7 @@ const orderSchema = new mongoose.Schema({
   forwarded_ip: String,
   user_agent: String,
   accept_language: String,
-  date_added: { type: Date, default: Date.now, index: true },
+  date_added: { type: Date, default: Date.now },
   date_modified: { type: Date, default: Date.now },
   
   // Embedded order items for better performance
@@ -118,17 +117,20 @@ const orderSchema = new mongoose.Schema({
     date_added: Date,
     estimated_delivery: Date,
     status: String
-  }]
+  }],
+  
+  // Migration verification
+  original_mysql_id: Number,
+  migration_notes: [String]
 }, { 
   collection: 'orders',
   timestamps: true 
 });
 
-// Indexes for faster queries
+// Indexes for faster queries - use ONLY schema.index()
 orderSchema.index({ customer_id: 1, date_added: -1 });
 orderSchema.index({ order_status_id: 1 });
 orderSchema.index({ date_added: -1 });
 orderSchema.index({ email: 1 });
-orderSchema.index({ 'products.product_id': 1 });
 
 export default mongoose.model('Order', orderSchema);

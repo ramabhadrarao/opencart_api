@@ -1,0 +1,5 @@
+Usage:
+npm run migrate:check        # Check migration readiness
+npm run migrate:phase4       # Migrate customers (CRITICAL)
+npm run migrate:all          # Migrate all phases
+npm run verify:files         # Verify uploaded files

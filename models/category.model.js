@@ -1,8 +1,8 @@
-// models/category.model.js
+// models/category.model.js - COMPLETE CHECK
 import mongoose from 'mongoose';
 
 const categorySchema = new mongoose.Schema({
-  category_id: { type: Number, unique: true, index: true },
+  category_id: { type: Number }, // REMOVED unique: true and index: true
   parent_id: { type: Number, default: 0 },
   image: String,
   top: { type: Boolean, default: false },
@@ -32,8 +32,9 @@ const categorySchema = new mongoose.Schema({
   migration_notes: [String]
 }, { collection: 'categories' });
 
-// Create indexes
-categorySchema.index({ 'descriptions.name': 'text' });
+// Create indexes ONLY with schema.index()
+categorySchema.index({ category_id: 1 }, { unique: true });
 categorySchema.index({ parent_id: 1 });
+categorySchema.index({ 'descriptions.name': 'text' });
 
 export default mongoose.model('Category', categorySchema);

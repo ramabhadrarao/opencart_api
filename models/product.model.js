@@ -1,10 +1,9 @@
-// models/product.model.js
 import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema({
-  product_id: { type: Number, required: true, index: true, unique: true },
-  model: { type: String, index: true },
-  sku: { type: String, sparse: true, index: true },
+  product_id: { type: Number, required: true }, // REMOVED unique: true and index: true
+  model: { type: String },
+  sku: { type: String },
   upc: String,
   ean: String,
   jan: String,
@@ -14,9 +13,9 @@ const productSchema = new mongoose.Schema({
   quantity: { type: Number, default: 0 },
   stock_status_id: Number,
   image: String,
-  manufacturer_id: { type: Number, index: true },
+  manufacturer_id: { type: Number },
   shipping: { type: Boolean, default: true },
-  price: { type: Number, default: 0, index: true },
+  price: { type: Number, default: 0 },
   points: { type: Number, default: 0 },
   tax_class_id: Number,
   date_available: Date,
@@ -29,9 +28,9 @@ const productSchema = new mongoose.Schema({
   subtract: { type: Boolean, default: true },
   minimum: { type: Number, default: 1 },
   sort_order: { type: Number, default: 0 },
-  status: { type: Boolean, default: true, index: true },
+  status: { type: Boolean, default: true },
   viewed: { type: Number, default: 0 },
-  date_added: { type: Date, index: true },
+  date_added: { type: Date },
   date_modified: { type: Date },
   
   // Embedded documents
@@ -110,12 +109,28 @@ const productSchema = new mongoose.Schema({
   related_products: [Number],
   tags: [String],
   
-  // Migration info
-  migration_notes: [String]
+  // Migration verification fields
+  original_mysql_id: Number,
+  migration_notes: [String],
+  file_verification_status: {
+    total_files: { type: Number, default: 0 },
+    verified_files: { type: Number, default: 0 },
+    missing_files: [String],
+    last_verified: Date
+  }
 }, { 
   collection: 'products',
-  strict: false // Allow dynamic attributes for backward compatibility
+  strict: false
 });
+
+// Create indexes ONLY with schema.index()
+productSchema.index({ product_id: 1 }, { unique: true });
+productSchema.index({ model: 1 });
+productSchema.index({ sku: 1 }, { sparse: true });
+productSchema.index({ manufacturer_id: 1 });
+productSchema.index({ price: 1 });
+productSchema.index({ status: 1 });
+productSchema.index({ date_added: 1 });
 
 // Text index for search
 productSchema.index({

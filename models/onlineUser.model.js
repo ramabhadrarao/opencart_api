@@ -1,4 +1,3 @@
-// models/onlineUser.model.js
 import mongoose from 'mongoose';
 
 const onlineUserSchema = new mongoose.Schema({
@@ -27,13 +26,8 @@ const onlineUserSchema = new mongoose.Schema({
   last_activity: { type: Date, default: Date.now }
 }, { collection: 'online_users' });
 
-// Create indexes for faster queries
+// Create indexes for faster queries - use ONLY schema.index()
 onlineUserSchema.index({ user_id: 1 });
-onlineUserSchema.index({ session_id: 1 }, { unique: true });
-onlineUserSchema.index({ last_activity: 1 });
-
-// Define a TTL index for online status (e.g., 15 minutes)
-// This will automatically remove users who haven't been active in the last 15 minutes
 onlineUserSchema.index({ last_activity: 1 }, { expireAfterSeconds: 15 * 60 });
 
 export default mongoose.model('OnlineUser', onlineUserSchema);
