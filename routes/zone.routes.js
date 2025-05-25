@@ -11,5 +11,7 @@ router.get('/country/:country_id', zoneController.getZonesByCountry);
 
 // Admin routes
 router.post('/', authenticateAdmin, zoneController.createZone);
-
+// Add these routes:
+router.put('/:id', authenticateAdmin, zoneController.updateZone);
+router.delete('/:id', authenticateAdmin, zoneController.deleteZone);
 export default router;

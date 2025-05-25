@@ -38,6 +38,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
 import backupRoutes from './routes/backup.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import addressRoutes from './routes/address.routes.js';
 
 // Initialize environment variables
 dotenv.config();
@@ -88,6 +89,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/analytics', analyticsRoutes); // New analytics routes
+app.use('/api/addresses', addressRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
