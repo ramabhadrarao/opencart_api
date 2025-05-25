@@ -2,7 +2,8 @@
 import Review from '../models/review.model.js';
 import Product from '../models/product.model.js';
 import Customer from '../models/customer.model.js';
-
+import { getNextReviewId } from '../utils/idGenerator.js';
+// Get reviews for a product
 // Get reviews for a product
 export const getProductReviews = async (req, res) => {
   try {
@@ -29,7 +30,7 @@ export const getProductReviews = async (req, res) => {
   }
 };
 
-// Add a review
+// Add a review - ✅ UPDATED WITH ID GENERATOR
 export const addReview = async (req, res) => {
   try {
     const { product_id, rating, text } = req.body;
@@ -66,9 +67,8 @@ export const addReview = async (req, res) => {
       return res.status(409).json({ message: 'You have already reviewed this product' });
     }
     
-    // Get next review_id
-    const lastReview = await Review.findOne().sort({ review_id: -1 });
-    const newReviewId = lastReview ? lastReview.review_id + 1 : 1;
+    // ✅ USE ID GENERATOR FOR REVIEW
+    const newReviewId = await getNextReviewId();
     
     // Create new review
     const newReview = new Review({

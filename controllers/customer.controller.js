@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { sendPasswordResetEmail, sendWelcomeEmail } from '../utils/emailService.js';
 import auditLogService from '../utils/auditLogService.js';
 import crypto from 'crypto';
-
+import { getNextCustomerId } from '../utils/idGenerator.js';
 // MAIN CUSTOMER OPERATIONS
 
 /**
@@ -209,9 +209,8 @@ export const registerCustomer = async (req, res) => {
     // Hash password using OpenCart's method
     const hashedPassword = hashOpenCartPassword(password, salt);
     
-    // Get next customer_id
-    const lastCustomer = await Customer.findOne().sort({ customer_id: -1 });
-    const newCustomerId = lastCustomer ? lastCustomer.customer_id + 1 : 1;
+    // ✅ USE ID GENERATOR FOR CUSTOMER
+    const newCustomerId = await getNextCustomerId();
     
     // Create new customer
     const newCustomer = new Customer({
@@ -738,6 +737,7 @@ export const setDefaultAddress = async (req, res) => {
 /**
  * Create a customer (admin only)
  */
+// Create a customer (admin only) - ✅ UPDATED WITH ID GENERATOR
 export const createCustomer = async (req, res) => {
   try {
     // Must have admin rights
@@ -773,9 +773,8 @@ export const createCustomer = async (req, res) => {
     // Hash password using OpenCart's method
     const hashedPassword = hashOpenCartPassword(password, salt);
     
-    // Get next customer_id
-    const lastCustomer = await Customer.findOne().sort({ customer_id: -1 });
-    const newCustomerId = lastCustomer ? lastCustomer.customer_id + 1 : 1;
+    // ✅ USE ID GENERATOR FOR CUSTOMER
+    const newCustomerId = await getNextCustomerId();
     
     // Create new customer
     const newCustomer = new Customer({

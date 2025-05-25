@@ -1,9 +1,19 @@
-// utils/idGenerator.js - PRODUCTION READY ID GENERATION SERVICE
+// utils/idGenerator.js - ENHANCED FOR ALL MIGRATED MODELS
 
 import mongoose from 'mongoose';
 import Customer from '../models/customer.model.js';
 import Product from '../models/product.model.js';
 import Order from '../models/order.model.js';
+import OrderProduct from '../models/orderProduct.model.js';
+import Category from '../models/category.model.js';
+import Admin from '../models/admin.model.js';
+import Country from '../models/country.model.js';
+import Zone from '../models/zone.model.js';
+import Address from '../models/address.model.js';
+import Review from '../models/review.model.js';
+import Coupon from '../models/coupon.model.js';
+import Wishlist from '../models/wishlist.model.js' ; // Wishlist uses customer_id as unique, no separate ID needed  
+import Manufacturer from '../models/manufacturer.model.js';
 
 // Counter model for atomic ID generation
 const counterSchema = new mongoose.Schema({
@@ -17,6 +27,23 @@ class IdGeneratorService {
   constructor() {
     this.initialized = false;
     this.fallbackCache = new Map();
+    
+    // Define all entities that need ID generation
+    this.entities = [
+      { name: 'customer', Model: Customer, field: 'customer_id' },
+      { name: 'product', Model: Product, field: 'product_id' },
+      { name: 'order', Model: Order, field: 'order_id' },
+      { name: 'order_product', Model: OrderProduct, field: 'order_product_id' },
+      { name: 'category', Model: Category, field: 'category_id' },
+      { name: 'manufacturer', Model: Manufacturer, field: 'manufacturer_id' },
+      { name: 'admin', Model: Admin, field: 'user_id' },
+      { name: 'country', Model: Country, field: 'country_id' },
+      { name: 'zone', Model: Zone, field: 'zone_id' },
+      { name: 'address', Model: Address, field: 'address_id' },
+      { name: 'review', Model: Review, field: 'review_id' },
+      { name: 'coupon', Model: Coupon, field: 'coupon_id' }
+      // Note: wishlist uses customer_id as unique, no separate ID needed
+    ];
   }
 
   // Initialize counters from existing data (run once on server startup)
@@ -26,18 +53,16 @@ class IdGeneratorService {
     try {
       console.log('🔄 Initializing ID generation service...');
       
-      const entities = [
-        { name: 'customer', Model: Customer },
-        { name: 'product', Model: Product },
-        { name: 'order', Model: Order }
-      ];
-
-      for (const entity of entities) {
-        await this.initializeEntityCounter(entity.name, entity.Model);
+      for (const entity of this.entities) {
+        await this.initializeEntityCounter(entity.name, entity.Model, entity.field);
       }
 
       this.initialized = true;
       console.log('✅ ID generation service initialized successfully');
+      
+      // Show current status
+      const status = await this.getCounterStatus();
+      console.log('📊 Counter Status:', status);
     } catch (error) {
       console.error('❌ Failed to initialize ID service:', error);
       throw error;
@@ -45,10 +70,8 @@ class IdGeneratorService {
   }
 
   // Initialize counter for specific entity
-  async initializeEntityCounter(entityName, Model) {
+  async initializeEntityCounter(entityName, Model, idField) {
     try {
-      const idField = `${entityName}_id`;
-      
       // Find highest existing ID
       const lastDoc = await Model.findOne()
         .sort({ [idField]: -1 })
@@ -64,7 +87,7 @@ class IdGeneratorService {
         { upsert: true }
       );
 
-      console.log(`   ✅ ${entityName}: max ID = ${currentMax}, next = ${currentMax + 1}`);
+      console.log(`   ✅ ${entityName}: max ${idField} = ${currentMax}, next = ${currentMax + 1}`);
     } catch (error) {
       console.error(`   ❌ Failed to initialize ${entityName}:`, error);
       throw error;
@@ -73,6 +96,11 @@ class IdGeneratorService {
 
   // Get next ID for any entity (MAIN METHOD)
   async getNextId(entityName) {
+    if (!this.initialized) {
+      console.warn('⚠️ ID Generator not initialized, attempting to initialize...');
+      await this.initialize();
+    }
+
     try {
       // Try atomic counter approach first
       const nextId = await this.getAtomicId(entityName);
@@ -137,6 +165,25 @@ class IdGeneratorService {
     
     console.log(`🔄 Reset ${entityName} counter to ${value}`);
   }
+
+  // Batch reserve IDs for bulk operations
+  async reserveIds(entityName, count) {
+    const counter = await Counter.findByIdAndUpdate(
+      `${entityName}_id`,
+      { $inc: { sequence_value: count } },
+      { 
+        new: true,
+        upsert: true,
+        runValidators: true
+      }
+    );
+
+    // Return array of reserved IDs
+    const endId = counter.sequence_value;
+    const startId = endId - count + 1;
+    
+    return Array.from({ length: count }, (_, i) => startId + i);
+  }
 }
 
 // Create singleton instance
@@ -155,14 +202,56 @@ export const getNextOrderId = async () => {
   return await idGenerator.getNextId('order');
 };
 
-export const getNextAddressId = async (customer) => {
+export const getNextOrderProductId = async () => {
+  return await idGenerator.getNextId('order_product');
+};
+
+export const getNextCategoryId = async () => {
+  return await idGenerator.getNextId('category');
+};
+
+export const getNextAdminId = async () => {
+  return await idGenerator.getNextId('admin');
+};
+
+export const getNextCountryId = async () => {
+  return await idGenerator.getNextId('country');
+};
+
+export const getNextZoneId = async () => {
+  return await idGenerator.getNextId('zone');
+};
+
+export const getNextAddressId = async (customer = null) => {
   // For embedded addresses, calculate within customer document
-  if (!customer.addresses || customer.addresses.length === 0) {
-    return 1;
+  if (customer && customer.addresses && customer.addresses.length > 0) {
+    const maxId = Math.max(...customer.addresses.map(addr => addr.address_id || 0));
+    return maxId + 1;
   }
   
-  const maxId = Math.max(...customer.addresses.map(addr => addr.address_id || 0));
-  return maxId + 1;
+  // For standalone address collection
+  return await idGenerator.getNextId('address');
+};
+
+export const getNextReviewId = async () => {
+  return await idGenerator.getNextId('review');
+};
+
+export const getNextCouponId = async () => {
+  return await idGenerator.getNextId('coupon');
+};
+
+// Batch operations
+export const reserveCustomerIds = async (count) => {
+  return await idGenerator.reserveIds('customer', count);
+};
+
+export const reserveProductIds = async (count) => {
+  return await idGenerator.reserveIds('product', count);
+};
+
+export const reserveOrderIds = async (count) => {
+  return await idGenerator.reserveIds('order', count);
 };
 
 // Export service instance and initialization
@@ -177,5 +266,9 @@ export const getIdCounterStatus = async () => {
 export const resetIdCounter = async (entityName, value) => {
   return await idGenerator.resetCounter(entityName, value);
 };
+export const getNextManufacturerId = async () => {
+  return await idGenerator.getNextId('manufacturer');
+};
+
 
 export default idGenerator;

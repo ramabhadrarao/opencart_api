@@ -1,4 +1,4 @@
-// Updated controllers/checkout.controller.js
+// controllers/checkout.controller.js - UPDATED
 import Checkout from '../models/checkout.model.js';
 import Cart from '../models/cart.model.js';
 import Order from '../models/order.model.js';
@@ -6,6 +6,7 @@ import OrderProduct from '../models/orderProduct.model.js';
 import Customer from '../models/customer.model.js';
 import Product from '../models/product.model.js';
 import { sendOrderConfirmationEmail, sendEmail } from '../utils/emailService.js';
+import { getNextOrderId, getNextOrderProductId } from '../utils/idGenerator.js'; // ✅ ADDED
 
 // Start a checkout process
 export const startCheckout = async (req, res) => {
@@ -145,7 +146,7 @@ export const addPaymentMethod = async (req, res) => {
   }
 };
 
-// Complete checkout and create order
+// Complete checkout and create order - ✅ UPDATED WITH ID GENERATOR
 export const completeCheckout = async (req, res) => {
   try {
     const { checkout_id, comment } = req.body;
@@ -198,9 +199,8 @@ export const completeCheckout = async (req, res) => {
       }
     }
     
-    // Get latest order_id
-    const lastOrder = await Order.findOne().sort({ order_id: -1 });
-    const newOrderId = lastOrder ? lastOrder.order_id + 1 : 1;
+    // ✅ USE ID GENERATOR FOR ORDER
+    const newOrderId = await getNextOrderId();
     
     // Create order
     const order = new Order({
@@ -224,15 +224,17 @@ export const completeCheckout = async (req, res) => {
     
     await order.save();
     
-    // Create order products
+    // Create order products with ID generator
     const orderItems = [];
     for (const item of cart.items) {
+      // ✅ USE ID GENERATOR FOR ORDER PRODUCT
       const orderProductId = await getNextOrderProductId();
       
       // Process options for this item
       const options = [];
       for (const opt of item.options) {
-        const orderOptionId = await getNextOrderOptionId();
+        // ✅ USE ID GENERATOR FOR ORDER OPTION (if needed)
+        const orderOptionId = await getNextOrderProductId(); // Reuse or create separate generator
         options.push({
           order_option_id: orderOptionId,
           product_option_id: opt.option_id,
@@ -282,16 +284,6 @@ export const completeCheckout = async (req, res) => {
     
     // Send order confirmation email
     try {
-      // Format order items for email template
-      const formattedItems = orderItems.map(item => `
-        <tr>
-          <td>${item.name}</td>
-          <td>${item.quantity}</td>
-          <td>$${parseFloat(item.price).toFixed(2)}</td>
-          <td>$${parseFloat(item.total).toFixed(2)}</td>
-        </tr>
-      `).join('');
-      
       await sendOrderConfirmationEmail({
         order_id: newOrderId,
         items: cart.items,
@@ -335,22 +327,3 @@ export const completeCheckout = async (req, res) => {
     res.status(500).json({ message: 'Error completing checkout', error: err.message });
   }
 };
-
-// Helper functions - Define these as async functions to use await
-async function getNextOrderProductId() {
-  const lastProduct = await OrderProduct.findOne().sort({ order_product_id: -1 });
-  return lastProduct ? lastProduct.order_product_id + 1 : 1;
-}
-
-async function getNextOrderOptionId() {
-  // This is a simple implementation - in production you might want a more robust solution
-  const lastOption = await OrderProduct.aggregate([
-    { $unwind: "$options" },
-    { $sort: { "options.order_option_id": -1 } },
-    { $limit: 1 },
-    { $project: { _id: 0, order_option_id: "$options.order_option_id" } }
-  ]);
-  
-  const lastId = lastOption.length > 0 ? lastOption[0].order_option_id : 0;
-  return lastId + 1;
-}

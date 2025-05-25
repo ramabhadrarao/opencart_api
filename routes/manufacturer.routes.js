@@ -1,13 +1,14 @@
 // routes/manufacturer.routes.js
 import express from 'express';
-import {
-  getAllManufacturers,
-  getManufacturerById
-} from '../controllers/manufacturer.controller.js';
+import manufacturerController from '../controllers/manufacturer.controller.js';
+import { authenticateAdmin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/', getAllManufacturers);
-router.get('/:id', getManufacturerById);
+router.get('/', manufacturerController.getAllManufacturers);
+router.get('/:id', manufacturerController.getManufacturerById);
+router.post('/', authenticateAdmin, manufacturerController.createManufacturer);
+router.put('/:id', authenticateAdmin, manufacturerController.updateManufacturer);
+router.delete('/:id', authenticateAdmin, manufacturerController.deleteManufacturer);
 
 export default router;

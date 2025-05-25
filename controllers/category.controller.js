@@ -1,7 +1,7 @@
 // controllers/category.controller.js - ENHANCED WITH TREE OPERATIONS
 import Category from '../models/category.model.js';
 import Product from '../models/product.model.js';
-
+import { getNextCategoryId } from '../utils/idGenerator.js';
 // Get all categories in flat list
 export const getAllCategories = async (req, res) => {
   try {
@@ -430,12 +430,162 @@ export const searchCategories = async (req, res) => {
     res.status(500).json({ message: 'Error searching categories', error: err.message });
   }
 };
+// Create category (Admin only)
+export const createCategory = async (req, res) => {
+  try {
+    if (!req.admin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    const { 
+      parent_id = 0, 
+      image, 
+      top = false, 
+      column = 1, 
+      sort_order = 0, 
+      status = true,
+      descriptions,
+      stores = [0]
+    } = req.body;
+    
+    // Validate required fields
+    if (!descriptions || !descriptions.length) {
+      return res.status(400).json({ message: 'At least one description is required' });
+    }
+    
+    // Check if main description exists
+    const mainDesc = descriptions.find(d => d.language_id === 1);
+    if (!mainDesc || !mainDesc.name) {
+      return res.status(400).json({ message: 'Main description with name is required' });
+    }
+    
+    // ✅ USE ID GENERATOR
+    const categoryId = await getNextCategoryId();
+    
+    const category = new Category({
+      category_id: categoryId,
+      parent_id,
+      image: image || '',
+      top,
+      column,
+      sort_order,
+      status,
+      date_added: new Date(),
+      date_modified: new Date(),
+      descriptions,
+      stores,
+      path: parent_id > 0 ? await buildCategoryPath(parent_id, categoryId) : [categoryId]
+    });
+    
+    await category.save();
+    
+    auditLogService.logCreate(req, 'category', category.toObject());
+    
+    res.status(201).json({
+      message: 'Category created successfully',
+      category_id: categoryId
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating category', error: err.message });
+  }
+};
 
+// Update category
+export const updateCategory = async (req, res) => {
+  try {
+    if (!req.admin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    const categoryId = parseInt(req.params.id);
+    const updateData = req.body;
+    
+    const category = await Category.findOne({ category_id: categoryId });
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    
+    const originalCategory = category.toObject();
+    
+    // Update fields
+    Object.keys(updateData).forEach(key => {
+      if (key !== 'category_id') {
+        category[key] = updateData[key];
+      }
+    });
+    
+    category.date_modified = new Date();
+    await category.save();
+    
+    auditLogService.logUpdate(req, 'category', originalCategory, category.toObject());
+    
+    res.json({
+      message: 'Category updated successfully',
+      category_id: categoryId
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating category', error: err.message });
+  }
+};
+
+// Delete category
+export const deleteCategory = async (req, res) => {
+  try {
+    if (!req.admin) {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    const categoryId = parseInt(req.params.id);
+    
+    // Check if category has children
+    const childCategories = await Category.countDocuments({ parent_id: categoryId });
+    if (childCategories > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete category with child categories' 
+      });
+    }
+    
+    // Check if category has products
+    const productCount = await Product.countDocuments({ categories: categoryId });
+    if (productCount > 0) {
+      return res.status(400).json({ 
+        message: `Cannot delete category with ${productCount} products` 
+      });
+    }
+    
+    const category = await Category.findOne({ category_id: categoryId });
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    
+    await Category.deleteOne({ category_id: categoryId });
+    
+    auditLogService.logDelete(req, 'category', category.toObject());
+    
+    res.json({
+      message: 'Category deleted successfully',
+      category_id: categoryId
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting category', error: err.message });
+  }
+};
+
+// Helper function to build category path
+async function buildCategoryPath(parentId, currentId) {
+  const parent = await Category.findOne({ category_id: parentId });
+  if (!parent) return [currentId];
+  
+  return [...(parent.path || []), currentId];
+}
 export default {
   getAllCategories,
   getCategoryTree,
   getCategoryById,
   getCategoryPath,
   getTopCategories,
-  searchCategories
+  searchCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory
 };

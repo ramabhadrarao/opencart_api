@@ -1,5 +1,6 @@
-// controllers/coupon.controller.js
+// controllers/coupon.controller.js - UPDATED
 import Coupon from '../models/coupon.model.js';
+import { getNextCouponId } from '../utils/idGenerator.js'; // ✅ ADDED
 
 // Get all coupons (Admin only)
 export const getAllCoupons = async (req, res) => {
@@ -70,7 +71,7 @@ export const getCouponByCode = async (req, res) => {
   }
 };
 
-// Create a new coupon (Admin only)
+// Create a new coupon (Admin only) - ✅ UPDATED WITH ID GENERATOR
 export const createCoupon = async (req, res) => {
   try {
     // Ensure user has admin privileges
@@ -106,9 +107,8 @@ export const createCoupon = async (req, res) => {
       return res.status(409).json({ message: 'Coupon code already exists' });
     }
     
-    // Get next coupon_id
-    const lastCoupon = await Coupon.findOne().sort({ coupon_id: -1 });
-    const newCouponId = lastCoupon ? lastCoupon.coupon_id + 1 : 1;
+    // ✅ USE ID GENERATOR FOR COUPON
+    const newCouponId = await getNextCouponId();
     
     // Create new coupon
     const newCoupon = new Coupon({
