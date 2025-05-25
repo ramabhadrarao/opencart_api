@@ -1,13 +1,8 @@
-// Updated models/product.model.js with improved schema design
+// models/product.model.js
 import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema({
-  product_id: { 
-    type: Number, 
-    unique: true,
-    required: true,
-    index: true 
-  },
+  product_id: { type: Number, required: true, index: true, unique: true },
   model: { type: String, index: true },
   sku: { type: String, sparse: true, index: true },
   upc: String,
@@ -39,10 +34,10 @@ const productSchema = new mongoose.Schema({
   date_added: { type: Date, index: true },
   date_modified: { type: Date },
   
-  // Embedded documents (previously nested schemas)
+  // Embedded documents
   descriptions: [{
     language_id: Number,
-    name: { type: String, index: true },
+    name: { type: String },
     description: String,
     tag: String,
     meta_title: String,
@@ -50,7 +45,7 @@ const productSchema = new mongoose.Schema({
     meta_keyword: String
   }],
   
-  categories: [{ type: Number, index: true }],
+  categories: [{ type: Number }],
   stores: [Number],
   
   additional_images: [{
@@ -113,26 +108,21 @@ const productSchema = new mongoose.Schema({
   }],
   
   related_products: [Number],
-  tags: [String]
+  tags: [String],
+  
+  // Migration info
+  migration_notes: [String]
 }, { 
   collection: 'products',
-  timestamps: true,
   strict: false // Allow dynamic attributes for backward compatibility
 });
 
-// Create text index for search
+// Text index for search
 productSchema.index({
   'descriptions.name': 'text',
   'descriptions.description': 'text',
   model: 'text',
   sku: 'text'
-});
-
-// Virtual for getting the main description
-productSchema.virtual('mainDescription').get(function() {
-  if (!this.descriptions || !this.descriptions.length) return null;
-  const defaultLang = this.descriptions.find(d => d.language_id === 1);
-  return defaultLang || this.descriptions[0];
 });
 
 export default mongoose.model('Product', productSchema);

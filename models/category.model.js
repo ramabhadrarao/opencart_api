@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 
 const categorySchema = new mongoose.Schema({
-  category_id: { type: Number, unique: true },
+  category_id: { type: Number, unique: true, index: true },
   parent_id: { type: Number, default: 0 },
   image: String,
   top: { type: Boolean, default: false },
@@ -23,7 +23,17 @@ const categorySchema = new mongoose.Schema({
   }],
   
   // Path for hierarchical structure
-  path: [Number]
+  path: [Number],
+  
+  // Stores
+  stores: [Number],
+  
+  // Migration info
+  migration_notes: [String]
 }, { collection: 'categories' });
+
+// Create indexes
+categorySchema.index({ 'descriptions.name': 'text' });
+categorySchema.index({ parent_id: 1 });
 
 export default mongoose.model('Category', categorySchema);
