@@ -1,7 +1,13 @@
-// controllers/product.controller.js (complete CRUD)
+// controllers/product.controller.js - COMPLETE WITH FILE MANAGEMENT
 import Product from '../models/product.model.js';
+import Customer from '../models/customer.model.js';
+import Order from '../models/order.model.js';
 import mongoose from 'mongoose';
 import auditLogService from '../utils/auditLogService.js';
+import { getNextProductId } from '../utils/idGenerator.js';
+import fs from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
 
 // MAIN PRODUCT OPERATIONS
 
@@ -81,7 +87,11 @@ export const getAllProducts = async (req, res) => {
         quantity: product.quantity,
         status: product.status,
         manufacturer_id: product.manufacturer_id,
-        date_added: product.date_added
+        date_added: product.date_added,
+        has_options: product.options && product.options.length > 0,
+        has_uploaded_files: product.options && product.options.some(opt => 
+          opt.values && opt.values.some(val => val.uploaded_file)
+        )
       };
     });
     
@@ -100,7 +110,7 @@ export const getAllProducts = async (req, res) => {
 };
 
 /**
- * Get a product by ID
+ * Get a product by ID with full details
  */
 export const getProductById = async (req, res) => {
   try {
@@ -111,8 +121,20 @@ export const getProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    // Increment view count
+    product.viewed = (product.viewed || 0) + 1;
+    await product.save();
+
+    // Format response based on user type
+    let responseProduct = product.toObject();
+
+    // For non-authenticated users, hide uploaded file details
+    if (!req.customer && !req.admin) {
+      responseProduct = await sanitizeProductForPublic(responseProduct);
+    }
     
-    res.json(product);
+    res.json(responseProduct);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching product', error: err.message });
   }
@@ -130,9 +152,8 @@ export const createProduct = async (req, res) => {
     
     const productData = req.body;
     
-    // Get next product_id
-    const lastProduct = await Product.findOne().sort({ product_id: -1 });
-    const newProductId = lastProduct ? lastProduct.product_id + 1 : 1;
+    // Get next product_id using ID generator
+    const newProductId = await getNextProductId();
     
     // Set default timestamps
     const now = new Date();
@@ -155,7 +176,7 @@ export const createProduct = async (req, res) => {
     await newProduct.save();
     
     // Log this action
-    auditLogService.logCreate(req, 'product', newProduct);
+    auditLogService.logCreate(req, 'product', newProduct.toObject());
     
     res.status(201).json({
       message: 'Product created successfully',
@@ -623,7 +644,7 @@ export const deleteProductOption = async (req, res) => {
 // PRODUCT OPTION VALUE OPERATIONS
 
 /**
- * Add option value to product option
+ * Add option value to product option with file upload support
  */
 export const addProductOptionValue = async (req, res) => {
   try {
@@ -661,6 +682,9 @@ export const addProductOptionValue = async (req, res) => {
       val.product_option_value_id > max ? val.product_option_value_id : max, 0);
     const newValueId = maxValueId + 1;
     
+    // Handle uploaded file if present
+    let uploadedFile = valueData.uploaded_file || '';
+    
     // Add option value
     if (!product.options[optIndex].values) {
       product.options[optIndex].values = [];
@@ -668,7 +692,8 @@ export const addProductOptionValue = async (req, res) => {
     
     product.options[optIndex].values.push({
       product_option_value_id: newValueId,
-      ...valueData
+      ...valueData,
+      uploaded_file: uploadedFile
     });
     
     // Update the product
@@ -679,7 +704,8 @@ export const addProductOptionValue = async (req, res) => {
       message: 'Product option value added successfully',
       product_id: productId,
       product_option_id: optionId,
-      product_option_value_id: newValueId
+      product_option_value_id: newValueId,
+      uploaded_file: uploadedFile
     });
   } catch (err) {
     res.status(500).json({ message: 'Error adding product option value', error: err.message });
@@ -840,10 +866,51 @@ export const addProductImage = async (req, res) => {
     res.status(201).json({
       message: 'Product image added successfully',
       product_id: productId,
-      product_image_id: newImageId
+      product_image_id: newImageId,
+      image_url: `/image/${imageData.image}`
     });
   } catch (err) {
     res.status(500).json({ message: 'Error adding product image', error: err.message });
+  }
+};
+
+/**
+ * Get product images
+ */
+export const getProductImages = async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    
+    const product = await Product.findOne({ product_id: productId });
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    const images = [
+      // Main image
+      ...(product.image ? [{
+        product_image_id: 0,
+        image: product.image,
+        sort_order: 0,
+        is_main: true,
+        image_url: `/image/${product.image}`
+      }] : []),
+      // Additional images
+      ...product.additional_images.map(img => ({
+        ...img,
+        is_main: false,
+        image_url: `/image/${img.image}`
+      }))
+    ];
+    
+    res.json({
+      product_id: productId,
+      images,
+      total: images.length
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching product images', error: err.message });
   }
 };
 
@@ -1041,6 +1108,216 @@ export const removeRelatedProduct = async (req, res) => {
   }
 };
 
+// FILE DOWNLOAD OPERATIONS
+
+/**
+ * Generate temporary download link for purchased product files
+ */
+export const generateDownloadLink = async (req, res) => {
+  try {
+    const customerId = req.customer.id;
+    const productId = parseInt(req.params.productId);
+    const optionValueId = parseInt(req.params.optionValueId);
+    
+    // Check if customer has purchased this product
+    const hasPurchased = await verifyCustomerPurchase(customerId, productId);
+    
+    if (!hasPurchased) {
+      return res.status(403).json({ 
+        message: 'You must purchase this product to download files' 
+      });
+    }
+    
+    // Find the product and option value
+    const product = await Product.findOne({ product_id: productId });
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    let uploadedFile = null;
+    
+    for (const option of product.options) {
+      if (option.values) {
+        const value = option.values.find(v => v.product_option_value_id === optionValueId);
+        if (value && value.uploaded_file) {
+          uploadedFile = value.uploaded_file;
+          break;
+        }
+      }
+    }
+    
+    if (!uploadedFile) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    // Generate temporary token (expires in 30 minutes)
+    const token = generateTemporaryToken(customerId, productId, optionValueId);
+    
+    res.json({
+      download_url: `/api/products/download/${token}`,
+      expires_in: 1800, // 30 minutes in seconds
+      file_name: path.basename(uploadedFile)
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error generating download link', error: err.message });
+  }
+};
+
+/**
+ * Download file with temporary token
+ */
+export const downloadFile = async (req, res) => {
+  try {
+    const token = req.params.token;
+    
+    // Verify and decode token
+    const tokenData = verifyTemporaryToken(token);
+    
+    if (!tokenData) {
+      return res.status(403).json({ message: 'Invalid or expired download token' });
+    }
+    
+    const { customerId, productId, optionValueId } = tokenData;
+    
+    // Verify customer still has access
+    const hasPurchased = await verifyCustomerPurchase(customerId, productId);
+    
+    if (!hasPurchased) {
+      return res.status(403).json({ 
+        message: 'Access denied - purchase verification failed' 
+      });
+    }
+    
+    // Find the file
+    const product = await Product.findOne({ product_id: productId });
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    let uploadedFile = null;
+    
+    for (const option of product.options) {
+      if (option.values) {
+        const value = option.values.find(v => v.product_option_value_id === optionValueId);
+        if (value && value.uploaded_file) {
+          uploadedFile = value.uploaded_file;
+          break;
+        }
+      }
+    }
+    
+    if (!uploadedFile) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    // Construct file path
+    const catalogDir = path.join(process.cwd(), 'catalog');
+    const filePath = path.join(catalogDir, uploadedFile);
+    
+    try {
+      // Check if file exists
+      await fs.access(filePath);
+    } catch (err) {
+      return res.status(404).json({ message: 'Physical file not found' });
+    }
+    
+    // Set appropriate headers for download
+    const fileName = path.basename(uploadedFile);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    
+    // Stream the file
+    const fileStream = require('fs').createReadStream(filePath);
+    fileStream.pipe(res);
+    
+  } catch (err) {
+    res.status(500).json({ message: 'Error downloading file', error: err.message });
+  }
+};
+
+// HELPER FUNCTIONS
+
+/**
+ * Verify if customer has purchased a product
+ */
+async function verifyCustomerPurchase(customerId, productId) {
+  try {
+    // Check if customer has completed orders containing this product
+    const order = await Order.findOne({
+      customer_id: customerId,
+      order_status_id: { $in: [3, 5] }, // Shipped or Complete
+      'products.product_id': productId
+    });
+    
+    return !!order;
+  } catch (error) {
+    console.error('Error verifying purchase:', error);
+    return false;
+  }
+}
+
+/**
+ * Generate temporary download token
+ */
+function generateTemporaryToken(customerId, productId, optionValueId) {
+  const data = {
+    customerId,
+    productId,
+    optionValueId,
+    expires: Date.now() + (30 * 60 * 1000) // 30 minutes
+  };
+  
+  const token = Buffer.from(JSON.stringify(data)).toString('base64');
+  return crypto.createHash('sha256').update(token).digest('hex').substring(0, 32) + '.' + token;
+}
+
+/**
+ * Verify temporary download token
+ */
+function verifyTemporaryToken(token) {
+  try {
+    const [hash, encodedData] = token.split('.');
+    
+    // Verify hash
+    const expectedHash = crypto.createHash('sha256').update(encodedData).digest('hex').substring(0, 32);
+    
+    if (hash !== expectedHash) {
+      return null;
+    }
+    
+    // Decode data
+    const data = JSON.parse(Buffer.from(encodedData, 'base64').toString());
+    
+    // Check expiration
+    if (Date.now() > data.expires) {
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Sanitize product data for public viewing (hide file details)
+ */
+async function sanitizeProductForPublic(product) {
+  if (product.options) {
+    product.options = product.options.map(option => ({
+      ...option,
+      values: option.values ? option.values.map(value => ({
+        ...value,
+        uploaded_file: value.uploaded_file ? 'protected_file' : undefined
+      })) : []
+    }));
+  }
+  
+  return product;
+}
+
 // Export all controllers
 export default {
   // Main product operations
@@ -1071,10 +1348,15 @@ export default {
   
   // Image operations
   addProductImage,
+  getProductImages,
   updateProductImage,
   deleteProductImage,
   
   // Related product operations
   addRelatedProduct,
-  removeRelatedProduct
+  removeRelatedProduct,
+  
+  // File operations
+  generateDownloadLink,
+  downloadFile
 };

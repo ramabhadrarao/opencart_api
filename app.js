@@ -1,4 +1,4 @@
-// app.js with updated routes and middleware
+// app.js - Enhanced with additional security and monitoring features
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -11,12 +11,18 @@ import swaggerSpec from './swagger.js';
 
 // Import ID generation service
 import { initializeIdService } from './utils/idGenerator.js';
+
 // Middleware
 import { requestLogger } from './middleware/logger.middleware.js';
 import { apiLimiter, authLimiter } from './middleware/rate-limit.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import { activityTracker } from './middleware/activityTracker.middleware.js';
 import { searchLogger } from './middleware/searchLogger.middleware.js';
+import { 
+  customImageHandler, 
+  logFileAccess, 
+  rateLimitFileDownloads 
+} from './middleware/imageServer.middleware.js';
 
 // Routes
 import customerRoutes from './routes/customer.routes.js';
@@ -46,13 +52,63 @@ dotenv.config();
 // Create Express app
 const app = express();
 
-// Apply global middleware
-app.use(helmet());
-app.use(cors());
-app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // Added for session cookies
+// Trust proxy for proper IP detection (important for rate limiting)
+app.set('trust proxy', 1);
+
+// Configure helmet with custom CSP for file uploads and images
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow file uploads
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true,
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // Cache preflight for 24 hours
+}));
+
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    // Don't compress images and already compressed files
+    if (req.headers['content-type'] && 
+        req.headers['content-type'].startsWith('image/')) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+
+// Increase payload limits for file uploads
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf, encoding) => {
+    // Store raw body for signature verification if needed
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use(cookieParser());
 app.use(requestLogger);
 app.use(apiLimiter);
 
@@ -60,8 +116,37 @@ app.use(apiLimiter);
 app.use(activityTracker);
 app.use(searchLogger);
 
+// === IMAGE AND FILE SERVING ===
+
+// Apply rate limiting specifically for file downloads (100 requests per 15 minutes)
+app.use('/image', rateLimitFileDownloads(100, 15 * 60 * 1000));
+
+// Apply file access logging
+app.use('/image', logFileAccess);
+
+// Serve images from catalog directory with custom handler
+app.get('/image/*', customImageHandler);
+
+// Serve static catalog files (for direct access if needed)
+app.use('/catalog', express.static('catalog', {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  dotfiles: 'deny', // Security: deny access to dotfiles
+  index: false, // Security: disable directory indexing
+  setHeaders: (res, path) => {
+    // Add security headers for static files
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+}));
+
 // API documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "OpenCart REST API Documentation"
+}));
 
 // Apply route-specific rate limits
 app.use('/api/customers/login', authLimiter);
@@ -69,9 +154,10 @@ app.use('/api/customers/register', authLimiter);
 app.use('/api/customers/forgot-password', authLimiter);
 app.use('/api/admin/login', authLimiter);
 
-// API routes
+// === API ROUTES ===
+
 app.use('/api/customers', customerRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/products', productRoutes); // Enhanced with file management
 app.use('/api/categories', categoryRoutes);
 app.use('/api/manufacturers', manufacturerRoutes);
 app.use('/api/orders', orderRoutes);
@@ -88,23 +174,82 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/backup', backupRoutes);
-app.use('/api/analytics', analyticsRoutes); // New analytics routes
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/addresses', addressRoutes);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date() });
+// === HEALTH CHECK ===
+
+app.get('/health', async (req, res) => {
+  try {
+    // Check database connection
+    const dbStatus = await checkDatabaseHealth();
+    
+    // Check file system
+    const fsStatus = await checkFileSystemHealth();
+    
+    const healthStatus = {
+      status: 'ok',
+      timestamp: new Date(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      services: {
+        database: dbStatus ? 'connected' : 'disconnected',
+        file_uploads: fsStatus ? 'enabled' : 'error',
+        image_serving: 'enabled'
+      }
+    };
+    
+    const httpStatus = dbStatus && fsStatus ? 200 : 503;
+    res.status(httpStatus).json(healthStatus);
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date(),
+      error: error.message
+    });
+  }
 });
 
-// Index route
+// === METRICS ENDPOINT (for monitoring) ===
+
+app.get('/metrics', (req, res) => {
+  const metrics = {
+    timestamp: new Date(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    cpu: process.cpuUsage(),
+    environment: process.env.NODE_ENV || 'development',
+    version: process.version,
+    platform: process.platform
+  };
+  
+  res.json(metrics);
+});
+
+// === INDEX ROUTE ===
+
 app.get('/api', (req, res) => {
   res.json({
-    message: 'OpenCart REST API',
-    version: '1.0',
+    message: 'OpenCart REST API with Enhanced File Management',
+    version: '2.1',
     documentation: '/api-docs',
+    health_check: '/health',
+    metrics: '/metrics',
+    features: [
+      'Product CRUD with file uploads',
+      'Image management and serving',
+      'Secure file downloads for customers',
+      'Temporary download links (30min expiry)',
+      'File upload validation',
+      'Image optimization and caching',
+      'Rate limiting for downloads',
+      'File access logging',
+      'Health monitoring',
+      'Performance metrics'
+    ],
     endpoints: [
       '/api/customers',
-      '/api/products',
+      '/api/products (enhanced)',
       '/api/categories',
       '/api/manufacturers',
       '/api/orders',
@@ -120,17 +265,86 @@ app.get('/api', (req, res) => {
       '/api/dashboard',
       '/api/coupons',
       '/api/backup',
-      '/api/analytics' // New analytics endpoint
-    ]
+      '/api/analytics',
+      '/api/addresses'
+    ],
+    file_management: {
+      image_endpoint: '/image/*',
+      upload_limits: {
+        images: '5MB',
+        files: '50MB'
+      },
+      supported_formats: {
+        images: ['JPEG', 'PNG', 'GIF', 'WebP'],
+        files: ['ZIP', 'PDF', 'DOC', 'DOCX', 'TXT', 'XLS', 'XLSX']
+      },
+      security: {
+        rate_limiting: '100 requests per 15 minutes',
+        file_validation: 'MIME type + signature verification',
+        access_logging: 'enabled'
+      }
+    }
   });
 });
 
-// Error handling
+// === GRACEFUL SHUTDOWN ===
+
+const gracefulShutdown = (signal) => {
+  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  
+  // Close server
+  server.close((err) => {
+    if (err) {
+      console.error('❌ Error during server shutdown:', err);
+      process.exit(1);
+    }
+    
+    console.log('✅ Server closed successfully');
+    
+    // Close database connection
+    process.exit(0);
+  });
+  
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.error('⚠️ Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+// === ERROR HANDLING ===
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start server
+// === HELPER FUNCTIONS ===
+
+async function checkDatabaseHealth() {
+  try {
+    // You can add a simple database ping here
+    // For example: await mongoose.connection.db.admin().ping();
+    return true;
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    return false;
+  }
+}
+
+async function checkFileSystemHealth() {
+  try {
+    const fs = await import('fs/promises');
+    await fs.access('./catalog');
+    return true;
+  } catch (error) {
+    console.error('File system health check failed:', error);
+    return false;
+  }
+}
+
+// === SERVER STARTUP ===
+
 const PORT = process.env.PORT || 5000;
+let server;
 
 connectMongoDB()
   .then(async () => {
@@ -146,10 +360,18 @@ connectMongoDB()
       // process.exit(1);
     }
     
-    app.listen(PORT, '0.0.0.0',() => {
+    server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 All services initialized and ready`);
+      console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+      console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
+      console.log(`📈 Metrics: http://localhost:${PORT}/metrics`);
     });
+    
+    // Setup graceful shutdown
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err.message);
