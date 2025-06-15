@@ -1,4 +1,4 @@
-// middleware/imageServer.middleware.js - Enhanced version with additional features
+// middleware/imageServer.middleware.js - FIXED FOR EXPRESS 5
 import express from 'express';
 import path from 'path';
 import fs from 'fs/promises';
@@ -37,11 +37,14 @@ export const imageServerMiddleware = express.static(
 );
 
 /**
- * Custom image handler with better error handling and validation
+ * 🔧 FIXED: Custom image handler with better error handling and validation
+ * This replaces the problematic wildcard route
  */
 export const customImageHandler = async (req, res, next) => {
   try {
-    const imagePath = req.params[0]; // Capture the full path after /image/
+    // 🔧 FIXED: Get the full path after /image/ from req.params[0] or req.params.filepath
+    // This works with both /image/*filepath and /image/{*filepath} patterns
+    const imagePath = req.params[0] || req.params.filepath || req.url.substring(1); // Remove leading slash
     
     if (!imagePath) {
       return res.status(400).json({ message: 'Image path is required' });

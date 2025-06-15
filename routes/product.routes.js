@@ -1,4 +1,4 @@
-// routes/product.routes.js - COMPLETE WITH FILE MANAGEMENT
+// routes/product.routes.js - FIXED FOR EXPRESS 5
 import express from 'express';
 import productController from '../controllers/product.controller.js';
 import { authenticateAdmin, authenticateCustomer, authenticateUser } from '../middleware/auth.middleware.js';
@@ -124,7 +124,9 @@ router.get('/:id/images',
 
 // === CUSTOMER ROUTES (require customer authentication) ===
 
-// Generate download link for purchased products
+// 🔧 FIXED: Generate download link for purchased products
+// ❌ OLD: router.get('/:productId/download/:optionValueId/link',
+// ✅ NEW: Use proper parameter names
 router.get('/:productId/download/:optionValueId/link',
   authenticateCustomer,
   async (req, res, next) => {
@@ -252,7 +254,9 @@ router.delete('/:id/options/:optionId/values/:valueId',
 
 // === FILE DOWNLOAD ROUTES ===
 
-// Download file with temporary token (public but protected)
+// 🔧 FIXED: Download file with temporary token (public but protected)
+// ❌ OLD: router.get('/download/*',
+// ✅ NEW: Use named parameter
 router.get('/download/:token',
   productController.downloadFile
 );

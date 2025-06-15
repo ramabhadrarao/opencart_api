@@ -1,4 +1,4 @@
-// app.js - Enhanced with additional security and monitoring features
+// app.js - FIXED FOR EXPRESS 5 COMPATIBILITY
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -124,10 +124,12 @@ app.use('/image', rateLimitFileDownloads(100, 15 * 60 * 1000));
 // Apply file access logging
 app.use('/image', logFileAccess);
 
-// Serve images from catalog directory with custom handler
-app.get('/image/*', customImageHandler);
+// 🔧 FIXED: Serve images from catalog directory with custom handler
+// ❌ OLD: app.get('/image/*', customImageHandler);
+// ✅ NEW: Use named parameter for Express 5 compatibility
+app.get('/image/{*filepath}', customImageHandler);
 
-// Serve static catalog files (for direct access if needed)
+// 🔧 FIXED: Serve static catalog files (for direct access if needed)
 app.use('/catalog', express.static('catalog', {
   maxAge: '1d',
   etag: true,
@@ -314,7 +316,12 @@ const gracefulShutdown = (signal) => {
 
 // === ERROR HANDLING ===
 
-app.use(notFoundHandler);
+// 🔧 FIXED: Handle 404 errors for all unmatched routes
+// ❌ OLD: app.use(notFoundHandler);
+// ✅ NEW: Use named parameter for Express 5 compatibility
+app.all('/{*catchall}', notFoundHandler);
+
+// Error handler (must be last)
 app.use(errorHandler);
 
 // === HELPER FUNCTIONS ===
