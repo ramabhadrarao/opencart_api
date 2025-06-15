@@ -109,13 +109,45 @@ router.get('/',
   productController.getAllProducts
 );
 
+
 // Get single product (public, but sanitized for non-customers)
 router.get('/:id', 
-  validateId,
-  authenticateUser, // Optional authentication
+  async (req, res, next) => {
+    try {
+      // Validate ID parameter
+      const productId = parseInt(req.params.id);
+      if (isNaN(productId) || productId <= 0) {
+        return res.status(400).json({ 
+          message: 'Invalid product ID. Must be a positive integer.' 
+        });
+      }
+      
+      // Optional authentication - don't fail if no token
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (token) {
+        try {
+          const decoded = verifyAccessToken(token);
+          if (decoded.isAdmin) {
+            req.admin = decoded;
+          } else {
+            req.customer = decoded;
+          }
+        } catch (authError) {
+          // Ignore auth errors for public routes - just continue without auth
+          console.log('Auth optional for product view:', authError.message);
+        }
+      }
+      
+      next();
+    } catch (error) {
+      res.status(500).json({ 
+        message: 'Error processing request', 
+        error: error.message 
+      });
+    }
+  },
   productController.getProductById
 );
-
 // Get product images (public)
 router.get('/:id/images',
   validateId,

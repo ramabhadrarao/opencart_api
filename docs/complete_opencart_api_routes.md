@@ -25,8 +25,8 @@ curl -X POST http://localhost:5000/api/admin/login \
 curl -X POST http://localhost:5000/api/customers/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "customer@example.com",
-    "password": "password123"
+    "email": "naseerahamed.sk@gmail.com",
+    "password": "naseer03"
   }'
 ```
 
