@@ -1538,6 +1538,401 @@ export const downloadFile = async (req, res) => {
   }
 };
 
+
+//
+
+
+// Add these functions to your controllers/product.controller.js
+
+/**
+ * Calculate price from product options
+ * @param {Object} product - Product object
+ * @returns {Object} Price information
+ */
+const calculateProductPrice = (product) => {
+  let minPrice = 0;
+  let maxPrice = 0;
+  let hasPriceOptions = false;
+  
+  // Start with base price
+  const basePrice = parseFloat(product.price) || 0;
+  minPrice = basePrice;
+  maxPrice = basePrice;
+  
+  // If product has options, calculate from option values
+  if (product.options && Array.isArray(product.options) && product.options.length > 0) {
+    const allPrices = [basePrice];
+    
+    for (const option of product.options) {
+      if (option.values && Array.isArray(option.values)) {
+        for (const value of option.values) {
+          if (value.price && parseFloat(value.price) > 0) {
+            const optionPrice = parseFloat(value.price);
+            
+            if (value.price_prefix === '+') {
+              allPrices.push(basePrice + optionPrice);
+            } else if (value.price_prefix === '-') {
+              allPrices.push(Math.max(0, basePrice - optionPrice));
+            } else {
+              // If no prefix, treat as addition
+              allPrices.push(basePrice + optionPrice);
+            }
+            hasPriceOptions = true;
+          }
+        }
+      }
+    }
+    
+    if (allPrices.length > 1) {
+      minPrice = Math.min(...allPrices);
+      maxPrice = Math.max(...allPrices);
+    }
+  }
+  
+  return {
+    calculated_price: maxPrice, // Use max price as the main price
+    min_price: minPrice,
+    max_price: maxPrice,
+    base_price: basePrice,
+    has_price_options: hasPriceOptions,
+    price_range: minPrice === maxPrice 
+      ? `$${maxPrice.toFixed(2)}` 
+      : `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`
+  };
+};
+
+/**
+ * Get all products with calculated prices
+ */
+export const getAllProductsWithPrices = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    // Build query with various filters
+    const filters = { status: req.query.status === 'false' ? false : true };
+    
+    if (req.query.category) {
+      filters.categories = parseInt(req.query.category);
+    }
+    
+    if (req.query.manufacturer) {
+      filters.manufacturer_id = parseInt(req.query.manufacturer);
+    }
+    
+    // Search in name, model, description
+    if (req.query.search) {
+      filters.$or = [
+        { 'descriptions.name': { $regex: req.query.search, $options: 'i' } },
+        { model: { $regex: req.query.search, $options: 'i' } },
+        { sku: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
+    
+    // Determine sort order
+    let sortOrder = {};
+    switch (req.query.sort || 'date_added') {
+      case 'name_asc':
+        sortOrder = { 'descriptions.name': 1 };
+        break;
+      case 'name_desc':
+        sortOrder = { 'descriptions.name': -1 };
+        break;
+      case 'price_asc':
+        sortOrder = { price: 1 };
+        break;
+      case 'price_desc':
+        sortOrder = { price: -1 };
+        break;
+      case 'date_added':
+      default:
+        sortOrder = { date_added: -1 };
+    }
+    
+    const products = await Product.find(filters)
+      .sort(sortOrder)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+    
+    const total = await Product.countDocuments(filters);
+    
+    // Format products with calculated prices
+    const formattedProducts = products.map(product => {
+      const mainDesc = product.descriptions?.find(d => d.language_id === 1) || product.descriptions?.[0] || {};
+      const priceInfo = calculateProductPrice(product);
+      
+      return {
+        product_id: product.product_id,
+        name: mainDesc.name || '',
+        model: product.model,
+        price: priceInfo.calculated_price, // For backwards compatibility
+        original_price: product.price, // Original DB price
+        image: product.image,
+        quantity: product.quantity,
+        status: product.status,
+        manufacturer_id: product.manufacturer_id,
+        date_added: product.date_added,
+        has_options: product.options && Array.isArray(product.options) && product.options.length > 0,
+        has_uploaded_files: product.options && Array.isArray(product.options) && product.options.some(opt => 
+          opt.values && Array.isArray(opt.values) && opt.values.some(val => val.uploaded_file)
+        ),
+        // Price information
+        ...priceInfo
+      };
+    });
+    
+    res.json({
+      products: formattedProducts,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error('Error in getAllProductsWithPrices:', err);
+    res.status(500).json({ 
+      message: 'Error fetching products with prices', 
+      error: err.message 
+    });
+  }
+};
+
+/**
+ * Get single product with calculated price
+ */
+export const getProductByIdWithPrice = async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    
+    const product = await Product.findOne({ product_id: productId }).lean();
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Calculate price information
+    const priceInfo = calculateProductPrice(product);
+    
+    // Enhanced product response with price calculations
+    const responseProduct = {
+      ...product,
+      // Price information
+      ...priceInfo,
+      // Backwards compatibility
+      price: priceInfo.calculated_price
+    };
+
+    // For non-authenticated users, hide uploaded file details
+    if (!req.customer && !req.admin) {
+      responseProduct.options = responseProduct.options?.map(option => ({
+        ...option,
+        values: option.values ? option.values.map(value => ({
+          ...value,
+          uploaded_file: value.uploaded_file ? 'protected_file' : undefined
+        })) : []
+      }));
+    }
+    
+    res.json(responseProduct);
+  } catch (err) {
+    console.error('Error in getProductByIdWithPrice:', err);
+    res.status(500).json({ 
+      message: 'Error fetching product with price', 
+      error: err.message 
+    });
+  }
+};
+
+/**
+ * Get products filtered by price range (calculated from options)
+ */
+export const getProductsByPriceRange = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const minPrice = parseFloat(req.query.min_price) || 0;
+    const maxPrice = parseFloat(req.query.max_price) || Number.MAX_SAFE_INTEGER;
+    
+    // Get all active products
+    const products = await Product.find({ status: true }).lean();
+    
+    // Filter by calculated price range
+    const filteredProducts = products.filter(product => {
+      const priceInfo = calculateProductPrice(product);
+      const productMaxPrice = priceInfo.max_price;
+      const productMinPrice = priceInfo.min_price;
+      
+      // Product is in range if its price range overlaps with requested range
+      return productMaxPrice >= minPrice && productMinPrice <= maxPrice;
+    });
+    
+    // Apply pagination
+    const paginatedProducts = filteredProducts
+      .slice(skip, skip + limit)
+      .map(product => {
+        const mainDesc = product.descriptions?.find(d => d.language_id === 1) || product.descriptions?.[0] || {};
+        const priceInfo = calculateProductPrice(product);
+        
+        return {
+          product_id: product.product_id,
+          name: mainDesc.name || '',
+          model: product.model,
+          price: priceInfo.calculated_price,
+          image: product.image,
+          quantity: product.quantity,
+          ...priceInfo
+        };
+      });
+    
+    res.json({
+      products: paginatedProducts,
+      filters: {
+        min_price: minPrice,
+        max_price: maxPrice === Number.MAX_SAFE_INTEGER ? null : maxPrice
+      },
+      pagination: {
+        page,
+        limit,
+        total: filteredProducts.length,
+        pages: Math.ceil(filteredProducts.length / limit)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Error fetching products by price range', 
+      error: err.message 
+    });
+  }
+};
+
+/**
+ * Get price statistics across all products
+ */
+export const getPriceStatistics = async (req, res) => {
+  try {
+    const products = await Product.find({ status: true }).lean();
+    
+    const priceData = products.map(product => {
+      const priceInfo = calculateProductPrice(product);
+      return {
+        product_id: product.product_id,
+        min_price: priceInfo.min_price,
+        max_price: priceInfo.max_price,
+        has_price_options: priceInfo.has_price_options
+      };
+    });
+    
+    const allMinPrices = priceData.map(p => p.min_price);
+    const allMaxPrices = priceData.map(p => p.max_price);
+    const productsWithOptions = priceData.filter(p => p.has_price_options);
+    
+    const stats = {
+      total_products: products.length,
+      products_with_price_options: productsWithOptions.length,
+      overall_min_price: Math.min(...allMinPrices),
+      overall_max_price: Math.max(...allMaxPrices),
+      average_min_price: allMinPrices.reduce((a, b) => a + b, 0) / allMinPrices.length,
+      average_max_price: allMaxPrices.reduce((a, b) => a + b, 0) / allMaxPrices.length,
+      price_ranges: {
+        'under_50': priceData.filter(p => p.max_price < 50).length,
+        '50_to_100': priceData.filter(p => p.max_price >= 50 && p.max_price < 100).length,
+        '100_to_200': priceData.filter(p => p.max_price >= 100 && p.max_price < 200).length,
+        'over_200': priceData.filter(p => p.max_price >= 200).length
+      }
+    };
+    
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Error fetching price statistics', 
+      error: err.message 
+    });
+  }
+};
+
+/**
+ * Get most expensive products
+ */
+export const getMostExpensiveProducts = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const products = await Product.find({ status: true }).lean();
+    
+    // Calculate prices and sort by max price
+    const productsWithPrices = products
+      .map(product => {
+        const mainDesc = product.descriptions?.find(d => d.language_id === 1) || product.descriptions?.[0] || {};
+        const priceInfo = calculateProductPrice(product);
+        
+        return {
+          product_id: product.product_id,
+          name: mainDesc.name || '',
+          model: product.model,
+          image: product.image,
+          price: priceInfo.calculated_price,
+          ...priceInfo
+        };
+      })
+      .sort((a, b) => b.max_price - a.max_price)
+      .slice(0, limit);
+    
+    res.json({
+      products: productsWithPrices,
+      message: `Top ${limit} most expensive products`
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Error fetching most expensive products', 
+      error: err.message 
+    });
+  }
+};
+
+/**
+ * Get cheapest products
+ */
+export const getCheapestProducts = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const products = await Product.find({ status: true }).lean();
+    
+    // Calculate prices and sort by min price
+    const productsWithPrices = products
+      .map(product => {
+        const mainDesc = product.descriptions?.find(d => d.language_id === 1) || product.descriptions?.[0] || {};
+        const priceInfo = calculateProductPrice(product);
+        
+        return {
+          product_id: product.product_id,
+          name: mainDesc.name || '',
+          model: product.model,
+          image: product.image,
+          price: priceInfo.calculated_price,
+          ...priceInfo
+        };
+      })
+      .filter(product => product.min_price > 0) // Exclude free products
+      .sort((a, b) => a.min_price - b.min_price)
+      .slice(0, limit);
+    
+    res.json({
+      products: productsWithPrices,
+      message: `Top ${limit} cheapest products`
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      message: 'Error fetching cheapest products', 
+      error: err.message 
+    });
+  }
+};
 // HELPER FUNCTIONS
 
 /**
@@ -1671,5 +2066,12 @@ export default {
   
   // File operations
   generateDownloadLink,
-  downloadFile
+  downloadFile,
+  // NEW PRICE-ENHANCED FUNCTIONS
+  getAllProductsWithPrices,
+  getProductByIdWithPrice,
+  getProductsByPriceRange,
+  getPriceStatistics,
+  getMostExpensiveProducts,
+  getCheapestProducts
 };

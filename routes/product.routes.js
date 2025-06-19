@@ -109,7 +109,222 @@ router.get('/',
   productController.getAllProducts
 );
 
+// CRITICAL: Place these routes BEFORE the existing /:id route in your routes/product.routes.js
 
+// === SPECIFIC ROUTES FIRST (BEFORE /:id) ===
+
+// Get all products with calculated prices from options
+router.get('/with-prices', 
+  validatePagination,
+  productController.getAllProductsWithPrices
+);
+
+// Get products filtered by calculated price range
+router.get('/price-range',
+  async (req, res, next) => {
+    // Validate price parameters
+    const minPrice = req.query.min_price;
+    const maxPrice = req.query.max_price;
+    
+    if (minPrice && (isNaN(parseFloat(minPrice)) || parseFloat(minPrice) < 0)) {
+      return res.status(400).json({ 
+        message: 'min_price must be a non-negative number' 
+      });
+    }
+    
+    if (maxPrice && (isNaN(parseFloat(maxPrice)) || parseFloat(maxPrice) < 0)) {
+      return res.status(400).json({ 
+        message: 'max_price must be a non-negative number' 
+      });
+    }
+    
+    if (minPrice && maxPrice && parseFloat(minPrice) > parseFloat(maxPrice)) {
+      return res.status(400).json({ 
+        message: 'min_price cannot be greater than max_price' 
+      });
+    }
+    
+    next();
+  },
+  validatePagination,
+  productController.getProductsByPriceRange
+);
+
+// Get price statistics across all products
+router.get('/price-stats',
+  productController.getPriceStatistics
+);
+
+// Get most expensive products (sorted by calculated max price)
+router.get('/most-expensive',
+  async (req, res, next) => {
+    const limit = req.query.limit;
+    if (limit && (isNaN(parseInt(limit)) || parseInt(limit) <= 0 || parseInt(limit) > 100)) {
+      return res.status(400).json({ 
+        message: 'limit must be a positive integer between 1 and 100' 
+      });
+    }
+    next();
+  },
+  productController.getMostExpensiveProducts
+);
+
+// Get cheapest products (sorted by calculated min price)
+router.get('/cheapest',
+  async (req, res, next) => {
+    const limit = req.query.limit;
+    if (limit && (isNaN(parseInt(limit)) || parseInt(limit) <= 0 || parseInt(limit) > 100)) {
+      return res.status(400).json({ 
+        message: 'limit must be a positive integer between 1 and 100' 
+      });
+    }
+    next();
+  },
+  productController.getCheapestProducts
+);
+
+// Compare prices of multiple products (POST)
+router.post('/compare-prices',
+  async (req, res) => {
+    try {
+      const { product_ids } = req.body;
+      
+      if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+        return res.status(400).json({ message: 'product_ids array is required' });
+      }
+      
+      if (product_ids.length > 10) {
+        return res.status(400).json({ message: 'Maximum 10 products can be compared at once' });
+      }
+      
+      const products = await Product.find({ 
+        product_id: { $in: product_ids },
+        status: true 
+      }).lean();
+      
+      // Use the calculateProductPrice function from the controller
+      const comparison = products.map(product => {
+        const mainDesc = product.descriptions?.find(d => d.language_id === 1) || product.descriptions?.[0] || {};
+        
+        // Calculate price from options (inline function)
+        let minPrice = 0;
+        let maxPrice = 0;
+        let hasPriceOptions = false;
+        
+        const basePrice = parseFloat(product.price) || 0;
+        minPrice = basePrice;
+        maxPrice = basePrice;
+        
+        if (product.options && Array.isArray(product.options) && product.options.length > 0) {
+          const allPrices = [basePrice];
+          
+          for (const option of product.options) {
+            if (option.values && Array.isArray(option.values)) {
+              for (const value of option.values) {
+                if (value.price && parseFloat(value.price) > 0) {
+                  const optionPrice = parseFloat(value.price);
+                  
+                  if (value.price_prefix === '+') {
+                    allPrices.push(basePrice + optionPrice);
+                  } else if (value.price_prefix === '-') {
+                    allPrices.push(Math.max(0, basePrice - optionPrice));
+                  } else {
+                    allPrices.push(basePrice + optionPrice);
+                  }
+                  hasPriceOptions = true;
+                }
+              }
+            }
+          }
+          
+          if (allPrices.length > 1) {
+            minPrice = Math.min(...allPrices);
+            maxPrice = Math.max(...allPrices);
+          }
+        }
+        
+        const priceInfo = {
+          calculated_price: maxPrice,
+          min_price: minPrice,
+          max_price: maxPrice,
+          base_price: basePrice,
+          has_price_options: hasPriceOptions,
+          price_range: minPrice === maxPrice 
+            ? `$${maxPrice.toFixed(2)}` 
+            : `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`
+        };
+        
+        return {
+          product_id: product.product_id,
+          name: mainDesc.name || '',
+          model: product.model,
+          image: product.image,
+          ...priceInfo
+        };
+      });
+      
+      // Sort by calculated price
+      comparison.sort((a, b) => a.calculated_price - b.calculated_price);
+      
+      const summary = {
+        cheapest: comparison[0],
+        most_expensive: comparison[comparison.length - 1],
+        average_price: comparison.reduce((sum, p) => sum + p.calculated_price, 0) / comparison.length,
+        price_difference: comparison[comparison.length - 1].calculated_price - comparison[0].calculated_price
+      };
+      
+      res.json({
+        comparison,
+        summary
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error comparing product prices', error: error.message });
+    }
+  }
+);
+
+// === DYNAMIC ID ROUTES (AFTER SPECIFIC ROUTES) ===
+
+// Single product with calculated price - specific route
+router.get('/:id/with-price',
+  async (req, res, next) => {
+    try {
+      // Validate ID parameter
+      const productId = parseInt(req.params.id);
+      if (isNaN(productId) || productId <= 0) {
+        return res.status(400).json({ 
+          message: 'Invalid product ID. Must be a positive integer.' 
+        });
+      }
+      
+      // Optional authentication - don't fail if no token
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (token) {
+        try {
+          const decoded = verifyAccessToken(token);
+          if (decoded.isAdmin) {
+            req.admin = decoded;
+          } else {
+            req.customer = decoded;
+          }
+        } catch (authError) {
+          // Ignore auth errors for public routes
+          console.log('Auth optional for product view:', authError.message);
+        }
+      }
+      
+      next();
+    } catch (error) {
+      res.status(500).json({ 
+        message: 'Error processing request', 
+        error: error.message 
+      });
+    }
+  },
+  productController.getProductByIdWithPrice
+);
+
+// IMPORTANT: Make sure your existing router.get('/:id', ...) comes AFTER all the above routes
 // Get single product (public, but sanitized for non-customers)
 router.get('/:id', 
   async (req, res, next) => {
@@ -611,5 +826,6 @@ router.use((error, req, res, next) => {
   
   next(error);
 });
+
 
 export default router;
