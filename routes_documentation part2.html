@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missing Routes Documentation - OpenCart API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .navbar-brand { font-weight: bold; color: white !important; }
+        .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .nav-link:hover { color: white !important; }
+        .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0; }
+        .route-card { border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px; }
+        .accordion-button { background: #f8f9fa; border: none; padding: 15px; width: 100%; text-align: left; cursor: pointer; border-radius: 8px 8px 0 0; display: flex; justify-content: between; align-items: center; }
+        .accordion-button:hover { background: #e9ecef; }
+        .accordion-content { padding: 20px; display: none; border-top: 1px solid #e0e0e0; }
+        .method-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+        .method-get { background: #28a745; }
+        .method-post { background: #007bff; }
+        .method-put { background: #ffc107; color: #000; }
+        .method-patch { background: #6f42c1; }
+        .method-delete { background: #dc3545; }
+        .auth-required { background: #dc3545; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+        .auth-admin { background: #fd7e14; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+        .auth-optional { background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+        .code-block { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
+        .code-block pre { margin: 0; white-space: pre-wrap; }
+        .card-header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .card-title { margin: 0; font-size: 1.5rem; }
+        .toc { position: sticky; top: 20px; }
+        .section-divider { height: 2px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 30px 0; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#home">📚 OpenCart API - Missing Routes</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a href="#addresses" class="nav-link">Addresses</a></li>
+                    <li class="nav-item"><a href="#countries" class="nav-link">Countries</a></li>
+                    <li class="nav-item"><a href="#zones" class="nav-link">Zones</a></li>
+                    <li class="nav-item"><a href="#coupons" class="nav-link">Coupons</a></li>
+                    <li class="nav-item"><a href="#manufacturers" class="nav-link">Manufacturers</a></li>
+                    <li class="nav-item"><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                    <li class="nav-item"><a href="#downloads" class="nav-link">Downloads</a></li>
+                    <li class="nav-item"><a href="#uploads" class="nav-link">Uploads</a></li>
+                    <li class="nav-item"><a href="#migration" class="nav-link">Migration</a></li>
+                    <li class="nav-item"><a href="#system" class="nav-link">System</a></li>
+                    <li class="nav-item"><a href="#analytics" class="nav-link">Analytics</a></li>
+                    <li class="nav-item"><a href="#products-advanced" class="nav-link">Products Advanced</a></li>
+                    <li class="nav-item"><a href="#categories-advanced" class="nav-link">Categories Advanced</a></li>
+                    <li class="nav-item"><a href="#orders-analytics" class="nav-link">Order Analytics</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container text-center">
+            <h1 class="display-4 mb-4">📋 Missing Routes Documentation</h1>
+            <p class="lead">Complete documentation for all missing API routes identified in the OpenCart system</p>
+            <div class="alert alert-warning">
+                <strong>⚠️ Important:</strong> These routes are missing from the current HTML documentation but exist in the codebase.
+            </div>
+        </div>
+    </section>
+
+    <div class="container-fluid mt-5">
+        <div class="row">
+            <!-- Table of Contents -->
+            <div class="col-lg-3">
+                <div class="toc">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">📑 Table of Contents</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li><a href="#addresses" class="text-decoration-none">🏠 Address Routes (4)</a></li>
+                                <li><a href="#countries" class="text-decoration-none">🌍 Country Routes (5)</a></li>
+                                <li><a href="#zones" class="text-decoration-none">🗺️ Zone Routes (5)</a></li>
+                                <li><a href="#coupons" class="text-decoration-none">🎫 Coupon Routes (5)</a></li>
+                                <li><a href="#manufacturers" class="text-decoration-none">🏭 Manufacturer Routes (5)</a></li>
+                                <li><a href="#dashboard" class="text-decoration-none">📊 Dashboard Routes (7)</a></li>
+                                <li><a href="#downloads" class="text-decoration-none">⬇️ Download Routes (2)</a></li>
+                                <li><a href="#uploads" class="text-decoration-none">⬆️ Upload Routes (2)</a></li>
+                                <li><a href="#migration" class="text-decoration-none">🔄 Migration Routes (3)</a></li>
+                                <li><a href="#system" class="text-decoration-none">⚙️ System Routes (1)</a></li>
+                                <li><a href="#analytics" class="text-decoration-none">📈 Analytics Routes (1)</a></li>
+                                <li><a href="#products-advanced" class="text-decoration-none">📦 Product Advanced (19)</a></li>
+                                <li><a href="#categories-advanced" class="text-decoration-none">📂 Category Advanced (3)</a></li>
+                                <li><a href="#orders-analytics" class="text-decoration-none">📋 Order Analytics (1)</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Address Routes -->
+                <section id="addresses" class="mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🏠 Address Routes</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Get All Addresses -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/addresses</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Only</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get all addresses with pagination and filtering (Admin only)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?page=1&limit=20&customer_id=123&country_id=1&search=street</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "addresses": [
+    {
+      "address_id": 1,
+      "customer_id": 123,
+      "firstname": "John",
+      "lastname": "Doe",
+      "address_1": "123 Main St",
+      "city": "New York",
+      "country_id": 1,
+      "customer_info": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 50,
+    "pages": 3
+  }
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Address by ID -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/addresses/:id</span>
+                                        <span class="auth-required ms-2">🔴 User Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get address by ID (customers can only access their own)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "address_id": 1,
+  "customer_id": 123,
+  "firstname": "John",
+  "lastname": "Doe",
+  "company": "Acme Corp",
+  "address_1": "123 Main St",
+  "address_2": "Apt 4B",
+  "city": "New York",
+  "postcode": "10001",
+  "country_id": 1,
+  "zone_id": 32,
+  "custom_field": ""
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create Address -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-post">POST</span>
+                                        <span class="ms-2">/api/addresses</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Only</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Create standalone address (Admin only)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "customer_id": 123,
+  "firstname": "John",
+  "lastname": "Doe",
+  "company": "Acme Corp",
+  "address_1": "123 Main St",
+  "address_2": "Apt 4B",
+  "city": "New York",
+  "postcode": "10001",
+  "country_id": 1,
+  "zone_id": 32
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Address created successfully",
+  "address_id": 456
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- Country Routes -->
+                <section id="countries" class="mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🌍 Country Routes</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Get All Countries -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/countries</span>
+                                        <span class="auth-optional ms-2">🟢 Public</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get all countries with pagination and filtering</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?page=1&limit=50&status=true&search=united</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "countries": [
+    {
+      "country_id": 1,
+      "name": "United States",
+      "iso_code_2": "US",
+      "iso_code_3": "USA",
+      "address_format": "",
+      "postcode_required": true,
+      "status": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 195,
+    "pages": 4
+  }
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Country by ID -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/countries/:id</span>
+                                        <span class="auth-optional ms-2">🟢 Public</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get country by ID</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "country_id": 1,
+  "name": "United States",
+  "iso_code_2": "US",
+  "iso_code_3": "USA",
+  "address_format": "",
+  "postcode_required": true,
+  "status": true
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create Country -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-post">POST</span>
+                                        <span class="ms-2">/api/countries</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Create country (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "New Country",
+  "iso_code_2": "NC",
+  "iso_code_3": "NCO",
+  "address_format": "{firstname} {lastname}\\n{address_1}\\n{city}, {zone} {postcode}\\n{country}",
+  "postcode_required": true,
+  "status": true
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Country created successfully",
+  "country_id": 196
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Update Country -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-put">PUT</span>
+                                        <span class="ms-2">/api/countries/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Update country (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "Updated Country Name",
+  "status": false
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Country updated successfully",
+  "country_id": 196
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Country -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-delete">DELETE</span>
+                                        <span class="ms-2">/api/countries/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Delete country (Admin auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Country deleted successfully",
+  "country_id": 196
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- Zone Routes -->
+                <section id="zones" class="mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🗺️ Zone Routes</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Get All Zones -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/zones</span>
+                                        <span class="auth-optional ms-2">🟢 Public</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get all zones with pagination and filtering</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?page=1&limit=50&country_id=1&status=true&search=california</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "zones": [
+    {
+      "zone_id": 32,
+      "country_id": 1,
+      "name": "California",
+      "code": "CA",
+      "status": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 50,
+    "pages": 1
+  }
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Zones by Country -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/zones/country/:country_id</span>
+                                        <span class="auth-optional ms-2">🟢 Public</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get zones by country (Public)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "zones": [
+    {
+      "zone_id": 32,
+      "country_id": 1,
+      "name": "California",
+      "code": "CA",
+      "status": true
+    },
+    {
+      "zone_id": 33,
+      "country_id": 1,
+      "name": "New York",
+      "code": "NY",
+      "status": true
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create Zone -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-post">POST</span>
+                                        <span class="ms-2">/api/zones</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Create zone (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "country_id": 1,
+  "name": "New Zone",
+  "code": "NZ",
+  "status": true
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Zone created successfully",
+  "zone_id": 999
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Update Zone -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-put">PUT</span>
+                                        <span class="ms-2">/api/zones/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Update zone (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "Updated Zone Name",
+  "status": false
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Zone updated successfully",
+  "zone_id": 999
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Zone -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-delete">DELETE</span>
+                                        <span class="ms-2">/api/zones/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Delete zone (Admin auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Zone deleted successfully",
+  "zone_id": 999
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- Coupon Routes -->
+                <section id="coupons" class="mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🎫 Coupon Routes</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Get All Coupons -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/coupons</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get all coupons (Admin auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "count": 10,
+  "coupons": [
+    {
+      "coupon_id": 1,
+      "name": "Summer Sale",
+      "code": "SUMMER20",
+      "type": "P",
+      "discount": 20,
+      "total": 0,
+      "date_start": "2024-06-01T00:00:00.000Z",
+      "date_end": "2024-08-31T23:59:59.000Z",
+      "uses_total": 100,
+      "uses_customer": 1,
+      "status": true
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Coupon by Code -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/coupons/:code</span>
+                                        <span class="auth-required ms-2">🔴 User Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get coupon by code (User auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "coupon_id": 1,
+  "name": "Summer Sale",
+  "code": "SUMMER20",
+  "type": "P",
+  "discount": 20,
+  "shipping": false,
+  "date_end": "2024-08-31T23:59:59.000Z"
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create Coupon -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-post">POST</span>
+                                        <span class="ms-2">/api/coupons</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Create coupon (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "Winter Sale",
+  "code": "WINTER30",
+  "type": "P",
+  "discount": 30,
+  "logged": false,
+  "shipping": false,
+  "total": 100,
+  "date_start": "2024-12-01",
+  "date_end": "2024-12-31",
+  "uses_total": 50,
+  "uses_customer": 1,
+  "status": true,
+  "products": [],
+  "categories": []
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Coupon created successfully",
+  "coupon": {
+    "coupon_id": 2,
+    "name": "Winter Sale",
+    "code": "WINTER30"
+  }
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Update Coupon -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-put">PUT</span>
+                                        <span class="ms-2">/api/coupons/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Update coupon (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "Updated Winter Sale",
+  "discount": 35,
+  "status": false
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Coupon updated successfully",
+  "coupon": {
+    "coupon_id": 2,
+    "name": "Updated Winter Sale",
+    "code": "WINTER30",
+    "status": false
+  }
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Coupon -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-delete">DELETE</span>
+                                        <span class="ms-2">/api/coupons/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Delete coupon (Admin auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Coupon deleted successfully",
+  "coupon_id": 2
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- Manufacturer Routes -->
+                <section id="manufacturers" class="mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🏭 Manufacturer Routes</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Get All Manufacturers -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/manufacturers</span>
+                                        <span class="auth-optional ms-2">🟢 Public</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get all manufacturers (Public)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>[
+  {
+    "manufacturer_id": 1,
+    "name": "Apple",
+    "image": "catalog/manufacturers/apple.jpg",
+    "sort_order": 1
+  },
+  {
+    "manufacturer_id": 2,
+    "name": "Samsung",
+    "image": "catalog/manufacturers/samsung.jpg",
+    "sort_order": 2
+  }
+]</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Manufacturer by ID -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/manufacturers/:id</span>
+                                        <span class="auth-optional ms-2">🟢 Public</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get manufacturer by ID with products (Public)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?page=1&limit=10</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "manufacturer_id": 1,
+  "name": "Apple",
+  "image": "catalog/manufacturers/apple.jpg",
+  "products": [
+    {
+      "product_id": 45,
+      "name": "iPhone 15",
+      "model": "A2846",
+      "price": 999.99,
+      "image": "catalog/products/iphone15.jpg",
+      "quantity": 100
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "pages": 3
+  }
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create Manufacturer -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-post">POST</span>
+                                        <span class="ms-2">/api/manufacturers</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Create manufacturer (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "Tesla",
+  "image": "catalog/manufacturers/tesla.jpg",
+  "sort_order": 3
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Manufacturer created successfully",
+  "manufacturer_id": 10
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Update Manufacturer -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-put">PUT</span>
+                                        <span class="ms-2">/api/manufacturers/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Update manufacturer (Admin auth)</p>
+                                    <h5>Request Body:</h5>
+                                    <div class="code-block">
+<pre>{
+  "name": "Tesla Motors",
+  "sort_order": 1
+}</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Manufacturer updated successfully",
+  "manufacturer_id": 10
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Manufacturer -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-delete">DELETE</span>
+                                        <span class="ms-2">/api/manufacturers/:id</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Delete manufacturer (Admin auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "message": "Manufacturer deleted successfully",
+  "manufacturer_id": 10
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-divider"></div>
+
+                <!-- Dashboard Routes -->
+                <section id="dashboard" class="mb-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">📊 Dashboard Routes</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Get Sales Revenue -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/sales</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get sales revenue (Admin auth)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?days=30</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "period": "30 days",
+  "start_date": "2024-11-06T00:00:00.000Z",
+  "end_date": "2024-12-06T00:00:00.000Z",
+  "total_sales": 156,
+  "total_revenue": 45678.90
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get New Orders -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/orders/new</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get new orders (Admin auth)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?days=7</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "period": "7 days",
+  "start_date": "2024-11-29T00:00:00.000Z",
+  "end_date": "2024-12-06T00:00:00.000Z",
+  "total_orders": 12,
+  "orders": [
+    {
+      "order_id": 1001,
+      "customer": "John Doe",
+      "total": 299.99,
+      "status_id": 1,
+      "date_added": "2024-12-06T10:30:00.000Z"
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get New Customers -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/customers/new</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get new customers (Admin auth)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?days=30</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "period": "30 days",
+  "start_date": "2024-11-06T00:00:00.000Z",
+  "end_date": "2024-12-06T00:00:00.000Z",
+  "total_new_customers": 45,
+  "customers": [
+    {
+      "customer_id": 1234,
+      "name": "Jane Smith",
+      "email": "jane@example.com",
+      "date_added": "2024-12-05T14:20:00.000Z"
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Online Customers -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/customers/online</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get online customers (Admin auth)</p>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "timestamp": "2024-12-06T15:30:00.000Z",
+  "total_online": 8,
+  "customers": [
+    {
+      "customer_id": 1234,
+      "name": "Jane Smith",
+      "ip": "192.168.1.100",
+      "url": "/products/45",
+      "referer": "https://google.com",
+      "last_activity": "2024-12-06T15:28:00.000Z"
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Yearly Revenue -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/revenue/yearly</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get yearly revenue (Admin auth)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?year=2024</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "year": 2024,
+  "total_revenue": 567890.45,
+  "total_orders": 2340,
+  "monthly_data": [
+    {
+      "month": 1,
+      "month_name": "January",
+      "revenue": 45678.90,
+      "order_count": 156
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Top Products -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/products/top</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get top products (Admin auth)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?days=30&limit=10</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "period": "30 days",
+  "start_date": "2024-11-06T00:00:00.000Z",
+  "end_date": "2024-12-06T00:00:00.000Z",
+  "top_products": [
+    {
+      "product_id": 45,
+      "name": "iPhone 15",
+      "model": "A2846",
+      "image": "catalog/products/iphone15.jpg",
+      "quantity_sold": 89,
+      "total_sales": 88999.11
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Get Recent Orders -->
+                            <div class="route-card">
+                                <button class="accordion-button" onclick="toggleAccordion(this)">
+                                    <div>
+                                        <span class="method-badge method-get">GET</span>
+                                        <span class="ms-2">/api/dashboard/orders/recent</span>
+                                        <span class="auth-admin ms-2">🟠 Admin Auth</span>
+                                    </div>
+                                    <span>▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <p><strong>Description:</strong> Get recent orders (Admin auth)</p>
+                                    <h5>Query Parameters:</h5>
+                                    <div class="code-block">
+<pre>?limit=10</pre>
+                                    </div>
+                                    <h5>Response:</h5>
+                                    <div class="code-block">
+<pre>{
+  "count": 10,
+  "orders": [
+    {
+      "order_id": 1001,
+      "customer": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "telephone": "+1234567890"
+      },
+      "total": 299.99,
+      "date_added": "2024-12-06T10:30:00.000Z",
+      "status_id": 1,
+      "payment_method": "Credit Card",
+      "shipping_method": "Standard Shipping",
+      "products": [
+        {
+          "product_id": 45,
+          "name": "iPhone 15",
+          "model": "A2846",
+          "quantity": 1,
+          "price": 299.99,
+          "total": 299.99
+        }
+      ]
+    }
+  ]
+}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                    .route-card { border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px; }
+                    .accordion-button { background: #f8f9fa; border: none; padding: 15px; width: 100%; text-align: left; cursor: pointer; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+                    .accordion-button:hover { background: #e9ecef; }
+                    .accordion-content { padding: 20px; display: none; border-top: 1px solid #e0e0e0; }
+                    .method-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+                    .method-get { background: #28a745; }
+                    .method-post { background: #007bff; }
+                    .method-put { background: #ffc107; color: #000; }
+                    .method-delete { background: #dc3545; }
+                    .auth-admin { background: #fd7e14; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+                    .auth-optional { background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+                    .code-block { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
+                    .code-block pre { margin: 0; white-space: pre-wrap; }
+                    .card-header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+                    .card-title { margin: 0; font-size: 1.5rem; }
+                    .section-divider { height: 2px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 30px 0; }
+                </style>
+
+                <script>
+                    function toggleAccordion(button) {
+                        const content = button.nextElementSibling;
+                        const arrow = button.querySelector('span:last-child');
+                        
+                        if (content.style.display === 'none' || content.style.display === '') {
+                            content.style.display = 'block';
+                            arrow.textContent = '▲';
+                        } else {
+                            content.style.display = 'none';
+                            arrow.textContent = '▼';
+                        }
+                    }
+
+                    // Initialize all accordions as closed
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const contents = document.querySelectorAll('.accordion-content');
+                        contents.forEach(content => {
+                            content.style.display = 'none';
+                        });
+                    });
+                </script>
+            </div>
+        </div>
+    </div>
+</html>

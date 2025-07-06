@@ -1,0 +1,3151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>OpenCart REST API Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons@2.44.0/icons-sprite.svg" rel="stylesheet"/>
+    <style>
+        .method-get { background: #28a745; }
+        .method-post { background: #007bff; }
+        .method-put { background: #ffc107; }
+        .method-delete { background: #dc3545; }
+        .method-patch { background: #6f42c1; }
+        
+        .method-badge {
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        
+        .accordion-button {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .accordion-content {
+            display: none;
+            padding: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .accordion-content.show {
+            display: block;
+        }
+        
+        .route-card {
+            margin-bottom: 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+        }
+        
+        .auth-required {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .auth-optional {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .auth-public {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <div class="navbar navbar-expand-md navbar-light">
+            <div class="container-xl">
+                <div class="navbar-brand">
+                    <h1 class="h2 mb-0">🛍️ OpenCart REST API Documentation</h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navbar navbar-expand-md navbar-light border-bottom">
+            <div class="container-xl">
+                <div class="collapse navbar-collapse">
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a href="#overview" class="nav-link">Overview</a></li>
+                        <li class="nav-item"><a href="#authentication" class="nav-link">Authentication</a></li>
+                        <li class="nav-item"><a href="#customers" class="nav-link">Customers</a></li>
+                        <li class="nav-item"><a href="#products" class="nav-link">Products</a></li>
+                        <li class="nav-item"><a href="#orders" class="nav-link">Orders</a></li>
+                        <li class="nav-item"><a href="#admin" class="nav-link">Admin</a></li>
+                        <li class="nav-item"><a href="#search" class="nav-link">Search</a></li>
+                        <li class="nav-item"><a href="#analytics" class="nav-link">Analytics</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="page-wrapper">
+            <div class="container-xl">
+                <div class="page-body">
+
+                    <!-- Overview Section -->
+                    <section id="overview" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">📖 API Overview</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h4>Base URL</h4>
+                                        <code>http://localhost:5000/api</code>
+                                        
+                                        <h4 class="mt-4">Response Format</h4>
+                                        <p>All responses are in JSON format</p>
+                                        
+                                        <h4 class="mt-4">Status Codes</h4>
+                                        <ul>
+                                            <li><code>200</code> - OK</li>
+                                            <li><code>201</code> - Created</li>
+                                            <li><code>400</code> - Bad Request</li>
+                                            <li><code>401</code> - Unauthorized</li>
+                                            <li><code>403</code> - Forbidden</li>
+                                            <li><code>404</code> - Not Found</li>
+                                            <li><code>500</code> - Internal Server Error</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h4>Authentication Types</h4>
+                                        <p><span class="auth-public">🟢 Public</span> - No authentication required</p>
+                                        <p><span class="auth-optional">🟡 Optional</span> - Authentication optional (enhanced features when authenticated)</p>
+                                        <p><span class="auth-required">🔴 Required</span> - Authentication required</p>
+                                        
+                                        <h4 class="mt-4">Error Response Format</h4>
+                                        <div class="code-block">
+<pre>{
+  "message": "Error description",
+  "error": "Detailed error message"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Authentication Section -->
+                    <section id="authentication" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">🔐 Authentication</h2>
+                            </div>
+                            <div class="card-body">
+                                <p>Most endpoints require JWT authentication. Include the token in the Authorization header:</p>
+                                <div class="code-block">
+                                    <pre>Authorization: Bearer YOUR_JWT_TOKEN</pre>
+                                </div>
+                                
+                                <h4 class="mt-4">Token Endpoints</h4>
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/customers/login</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Customer login</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "email": "customer@example.com",
+  "password": "password123"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Login successful",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "customer": {
+    "id": 123,
+    "name": "John Doe",
+    "email": "customer@example.com"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/admin/login</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Admin login</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "username": "admin",
+  "password": "admin123"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Admin login successful",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "admin": {
+    "id": 1,
+    "username": "admin",
+    "name": "Admin User",
+    "isAdmin": true
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Customer Routes -->
+                    <section id="customers" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">👥 Customer Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Customer Registration -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/customers/register</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Register a new customer</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "firstname": "John",
+  "lastname": "Doe",
+  "email": "john.doe@example.com",
+  "telephone": "+1234567890",
+  "password": "password123",
+  "newsletter": true,
+  "agree": true
+}</pre>
+                                        </div>
+                                        <h5>Response (201):</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Registration successful",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "customer": {
+    "id": 124,
+    "name": "John Doe",
+    "email": "john.doe@example.com"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Profile -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/customers/profile</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get customer profile</p>
+                                        <h5>Headers:</h5>
+                                        <div class="code-block">
+<pre>Authorization: Bearer YOUR_JWT_TOKEN</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "customer_id": 124,
+  "firstname": "John",
+  "lastname": "Doe",
+  "email": "john.doe@example.com",
+  "telephone": "+1234567890",
+  "newsletter": true,
+  "addresses": [
+    {
+      "address_id": 1,
+      "firstname": "John",
+      "lastname": "Doe",
+      "address_1": "123 Main St",
+      "city": "New York",
+      "country_id": 1
+    }
+  ]
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Update Profile -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-put">PUT</span>
+                                            <span class="ms-2">/api/customers/profile</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Update customer profile</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "firstname": "John",
+  "lastname": "Smith",
+  "email": "john.smith@example.com",
+  "telephone": "+1234567890",
+  "newsletter": false
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Profile updated successfully",
+  "customer": {
+    "id": 124,
+    "name": "John Smith",
+    "email": "john.smith@example.com",
+    "telephone": "+1234567890"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Password Reset -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/customers/forgot-password</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Request password reset</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "email": "john.doe@example.com"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Password reset instructions sent to your email"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Address Management -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/customers/address</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Add new address</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "firstname": "John",
+  "lastname": "Doe",
+  "company": "Tech Corp",
+  "address_1": "123 Main Street",
+  "address_2": "Apt 4B",
+  "city": "New York",
+  "postcode": "10001",
+  "country_id": 1,
+  "zone_id": 32
+}</pre>
+                                        </div>
+                                        <h5>Response (201):</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Address added successfully",
+  "address_id": 2,
+  "address": {
+    "address_id": 2,
+    "firstname": "John",
+    "lastname": "Doe",
+    "company": "Tech Corp",
+    "address_1": "123 Main Street",
+    "address_2": "Apt 4B",
+    "city": "New York",
+    "postcode": "10001",
+    "country_id": 1,
+    "zone_id": 32
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Admin: Get All Customers -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/customers?page=1&limit=20</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get all customers (admin only)</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>page</code> - Page number (default: 1)</li>
+                                            <li><code>limit</code> - Items per page (default: 20)</li>
+                                            <li><code>search</code> - Search term</li>
+                                            <li><code>status</code> - Filter by status (true/false)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "customers": [
+    {
+      "customer_id": 123,
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "telephone": "+1234567890",
+      "status": true,
+      "date_added": "2023-01-15T10:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 50,
+    "pages": 3
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Product Routes -->
+                    <section id="products" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">📦 Product Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Get All Products -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/products</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get all products with pagination and filters</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>page</code> - Page number (default: 1)</li>
+                                            <li><code>limit</code> - Items per page (default: 10)</li>
+                                            <li><code>category</code> - Filter by category ID</li>
+                                            <li><code>manufacturer</code> - Filter by manufacturer ID</li>
+                                            <li><code>search</code> - Search term</li>
+                                            <li><code>sort</code> - Sort by (date_added, name_asc, name_desc, price_asc, price_desc)</li>
+                                            <li><code>price_min</code> - Minimum price</li>
+                                            <li><code>price_max</code> - Maximum price</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "products": [
+    {
+      "product_id": 123,
+      "name": "Smartphone X",
+      "model": "SX-2023",
+      "price": 299.99,
+      "image": "smartphone-x.jpg",
+      "quantity": 50,
+      "status": true,
+      "manufacturer_id": 5,
+      "date_added": "2023-01-15T10:30:00.000Z",
+      "has_options": true,
+      "has_uploaded_files": false
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 150,
+    "pages": 15
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Single Product -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/products/{id}</span>
+                                            <span class="auth-optional ms-2">🟡 Optional Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get single product by ID</p>
+                                        <h5>URL Parameters:</h5>
+                                        <ul>
+                                            <li><code>id</code> - Product ID</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "product_id": 123,
+  "model": "SX-2023",
+  "price": 299.99,
+  "quantity": 50,
+  "status": true,
+  "image": "smartphone-x.jpg",
+  "descriptions": [
+    {
+      "language_id": 1,
+      "name": "Smartphone X",
+      "description": "Latest smartphone with advanced features",
+      "meta_title": "Smartphone X - Buy Now"
+    }
+  ],
+  "categories": [1, 2],
+  "options": [
+    {
+      "product_option_id": 1,
+      "option_id": 5,
+      "name": "Color",
+      "type": "select",
+      "required": true,
+      "values": [
+        {
+          "product_option_value_id": 1,
+          "option_value_id": 23,
+          "name": "Black",
+          "price": 0,
+          "price_prefix": "+",
+          "quantity": 25
+        }
+      ]
+    }
+  ],
+  "viewed": 156
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Create Product -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/products</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Create a new product</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "model": "NEW-PHONE-2023",
+  "price": 399.99,
+  "quantity": 100,
+  "status": true,
+  "manufacturer_id": 5,
+  "categories": [1, 2],
+  "descriptions": [
+    {
+      "language_id": 1,
+      "name": "New Phone 2023",
+      "description": "Brand new smartphone with latest features",
+      "meta_title": "New Phone 2023"
+    }
+  ],
+  "options": [
+    {
+      "option_id": 5,
+      "name": "Color",
+      "type": "select",
+      "required": true,
+      "values": [
+        {
+          "option_value_id": 23,
+          "name": "Black",
+          "price": 0,
+          "price_prefix": "+",
+          "quantity": 50
+        }
+      ]
+    }
+  ]
+}</pre>
+                                        </div>
+                                        <h5>Response (201):</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Product created successfully",
+  "product_id": 124
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Product with Calculated Prices -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/products/with-prices</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get products with calculated prices from options</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "products": [
+    {
+      "product_id": 123,
+      "name": "Smartphone X",
+      "model": "SX-2023",
+      "price": 299.99,
+      "original_price": 299.99,
+      "calculated_price": 329.99,
+      "min_price": 299.99,
+      "max_price": 329.99,
+      "base_price": 299.99,
+      "has_price_options": true,
+      "price_range": "$299.99 - $329.99"
+    }
+  ]
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generate Download Link -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/products/{productId}/download/{optionValueId}/link</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Generate temporary download link for purchased product files</p>
+                                        <h5>URL Parameters:</h5>
+                                        <ul>
+                                            <li><code>productId</code> - Product ID</li>
+                                            <li><code>optionValueId</code> - Option Value ID with file</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "download_url": "/api/products/download/abc123def456",
+  "expires_in": 1800,
+  "file_name": "design_file.dst"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Add Product Option -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/products/{id}/options</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Add option to product</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "option_id": 7,
+  "name": "Size",
+  "type": "select",
+  "required": true,
+  "sort_order": 1,
+  "values": [
+    {
+      "option_value_id": 30,
+      "name": "Small",
+      "price": 0,
+      "price_prefix": "+",
+      "quantity": 100
+    },
+    {
+      "option_value_id": 31,
+      "name": "Medium",
+      "price": 5,
+      "price_prefix": "+",
+      "quantity": 150
+    },
+    {
+      "option_value_id": 32,
+      "name": "Large",
+      "price": 10,
+      "price_prefix": "+",
+      "quantity": 80
+    }
+  ]
+}</pre>
+                                        </div>
+                                        <h5>Response (201):</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Product option added successfully",
+  "product_id": 123,
+  "product_option_id": 15
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Category Routes -->
+                    <section id="categories" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">🗂️ Category Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Get All Categories -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/categories</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get all categories in flat list</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>include_inactive</code> - Include inactive categories (true/false)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "categories": [
+    {
+      "category_id": 1,
+      "name": "Electronics",
+      "parent_id": 0,
+      "image": "electronics.jpg",
+      "sort_order": 1,
+      "status": true,
+      "path": [1]
+    },
+    {
+      "category_id": 2,
+      "name": "Smartphones",
+      "parent_id": 1,
+      "image": "smartphones.jpg",
+      "sort_order": 1,
+      "status": true,
+      "path": [1, 2]
+    }
+  ],
+  "total": 25
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Category Tree -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/categories/tree</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get category tree structure</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>max_depth</code> - Maximum tree depth (default: 10)</li>
+                                            <li><code>include_counts</code> - Include product counts (true/false)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "tree": [
+    {
+      "category_id": 1,
+      "name": "Electronics",
+      "description": "Electronic devices and accessories",
+      "image": "electronics.jpg",
+      "sort_order": 1,
+      "parent_id": 0,
+      "level": 0,
+      "has_children": true,
+      "product_count": 45,
+      "children": [
+        {
+          "category_id": 2,
+          "name": "Smartphones",
+          "description": "Mobile phones and accessories",
+          "image": "smartphones.jpg",
+          "sort_order": 1,
+          "parent_id": 1,
+          "level": 1,
+          "has_children": false,
+          "product_count": 12,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "total_categories": 25,
+  "max_depth": 10
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Single Category -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/categories/{id}</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get category with products and pagination</p>
+                                        <h5>URL Parameters:</h5>
+                                        <ul>
+                                            <li><code>id</code> - Category ID</li>
+                                        </ul>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>page</code> - Page number (default: 1)</li>
+                                            <li><code>limit</code> - Items per page (default: 20)</li>
+                                            <li><code>sort</code> - Sort by (sort_order, name, price, date_added)</li>
+                                            <li><code>order</code> - Sort order (asc/desc)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "category": {
+    "category_id": 2,
+    "name": "Smartphones",
+    "description": "Mobile phones and accessories",
+    "meta_title": "Smartphones - Shop Now",
+    "meta_description": "Browse our collection of smartphones",
+    "image": "smartphones.jpg",
+    "parent_id": 1,
+    "sort_order": 1,
+    "path": [1, 2]
+  },
+  "parent_category": {
+    "category_id": 1,
+    "name": "Electronics",
+    "image": "electronics.jpg"
+  },
+  "children": [],
+  "breadcrumbs": [
+    {
+      "category_id": 1,
+      "name": "Electronics"
+    },
+    {
+      "category_id": 2,
+      "name": "Smartphones"
+    }
+  ],
+  "products": [
+    {
+      "product_id": 123,
+      "name": "Smartphone X",
+      "description": "Latest smartphone with advanced features...",
+      "model": "SX-2023",
+      "price": 299.99,
+      "special_price": null,
+      "image": "smartphone-x.jpg",
+      "quantity": 50,
+      "in_stock": true,
+      "manufacturer_id": 5,
+      "date_added": "2023-01-15T10:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 12,
+    "pages": 1
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Create Category -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/categories</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Create a new category</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "parent_id": 1,
+  "image": "tablets.jpg",
+  "top": false,
+  "column": 1,
+  "sort_order": 2,
+  "status": true,
+  "descriptions": [
+    {
+      "language_id": 1,
+      "name": "Tablets",
+      "description": "Tablet computers and accessories",
+      "meta_title": "Tablets - Shop Now",
+      "meta_description": "Browse our collection of tablets",
+      "meta_keyword": "tablets, ipad, android"
+    }
+  ],
+  "stores": [0]
+}</pre>
+                                        </div>
+                                        <h5>Response (201):</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Category created successfully",
+  "category_id": 26
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Cart Routes -->
+                    <section id="cart" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">🛒 Cart Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Get Cart -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/cart</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get customer cart with optimized product fetching</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "cart": {
+    "customer_id": 123,
+    "items": [
+      {
+        "_id": "64f8a1b2c3d4e5f6789012ab",
+        "product_id": 45,
+        "name": "Smartphone X",
+        "model": "SX-2023",
+        "quantity": 2,
+        "max_quantity": 50,
+        "base_price": 299.99,
+        "final_price": 329.99,
+        "subtotal": 659.98,
+        "options": [
+          {
+            "option_id": 5,
+            "option_name": "Color",
+            "option_value_id": 23,
+            "option_value_name": "Black",
+            "price_modifier": 30,
+            "price_prefix": "+"
+          }
+        ],
+        "in_stock": true,
+        "stock_quantity": 50,
+        "product_details": {
+          "description": "Latest smartphone with advanced features...",
+          "weight": 0.18,
+          "dimensions": {
+            "length": 15.5,
+            "width": 7.5,
+            "height": 0.8
+          }
+        }
+      }
+    ],
+    "updated_at": "2023-12-15T14:30:00.000Z"
+  },
+  "totals": {
+    "subtotal": 659.98,
+    "tax": 66.00,
+    "shipping": 0.00,
+    "total": 725.98
+  },
+  "items_count": 2,
+  "summary": {
+    "total_items": 1,
+    "unavailable_items": 0,
+    "has_out_of_stock": false
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Add to Cart -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/cart/add</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Add product to cart with enhanced validation</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "product_id": 45,
+  "quantity": 2,
+  "options": [
+    {
+      "option_id": 5,
+      "option_value_id": 23
+    },
+    {
+      "option_id": 7,
+      "option_value_id": 31
+    }
+  ]
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Product added to cart successfully",
+  "added_item": {
+    "product_id": 45,
+    "name": "Smartphone X",
+    "quantity": 2,
+    "final_price": 329.99
+  },
+  "cart_summary": {
+    "items_count": 2,
+    "total": 659.98
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Update Cart -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-put">PUT</span>
+                                            <span class="ms-2">/api/cart/update</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Update cart item quantity</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "item_id": "64f8a1b2c3d4e5f6789012ab",
+  "quantity": 3
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Cart updated successfully",
+  "cart_summary": {
+    "items_count": 3,
+    "total": 989.97
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Remove from Cart -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-delete">DELETE</span>
+                                            <span class="ms-2">/api/cart/remove/{item_id}</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Remove item from cart</p>
+                                        <h5>URL Parameters:</h5>
+                                        <ul>
+                                            <li><code>item_id</code> - Cart item ID</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Item removed from cart successfully",
+  "cart_summary": {
+    "items_count": 0,
+    "total": 0
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Clear Cart -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-delete">DELETE</span>
+                                            <span class="ms-2">/api/cart/clear</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Clear entire cart</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Cart cleared successfully",
+  "cart_summary": {
+    "items_count": 0,
+    "total": 0
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Cart Summary -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/cart/summary</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get cart summary (lightweight version)</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "items_count": 2,
+  "total": 659.98,
+  "has_items": true,
+  "last_updated": "2023-12-15T14:30:00.000Z"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Order Routes -->
+                    <section id="orders" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">📋 Order Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Get Customer Orders -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/orders/my-orders</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get customer orders with full details</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>page</code> - Page number (default: 1)</li>
+                                            <li><code>limit</code> - Items per page (default: 10)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "orders": [
+    {
+      "order_id": 1001,
+      "total": 725.98,
+      "order_status_id": 3,
+      "date_added": "2023-12-10T10:30:00.000Z",
+      "date_modified": "2023-12-11T15:45:00.000Z",
+      "payment_method": "Credit Card",
+      "shipping_method": "Standard Shipping",
+      "comment": "Please deliver to front door",
+      "products": [
+        {
+          "order_product_id": 2001,
+          "product_id": 45,
+          "name": "Smartphone X",
+          "model": "SX-2023",
+          "quantity": 2,
+          "price": 329.99,
+          "total": 659.98,
+          "options": [
+            {
+              "order_option_id": 3001,
+              "name": "Color",
+              "value": "Black",
+              "type": "select"
+            }
+          ]
+        }
+      ],
+      "product_count": 1,
+      "tracking": "TRK123456789",
+      "currency_code": "USD"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 5,
+    "pages": 1
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Order Details -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/orders/details/{id}</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get detailed order by ID</p>
+                                        <h5>URL Parameters:</h5>
+                                        <ul>
+                                            <li><code>id</code> - Order ID</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "order_id": 1001,
+  "invoice_no": 12345,
+  "total": 725.98,
+  "order_status_id": 3,
+  "date_added": "2023-12-10T10:30:00.000Z",
+  "date_modified": "2023-12-11T15:45:00.000Z",
+  "customer": {
+    "firstname": "John",
+    "lastname": "Doe",
+    "email": "john.doe@example.com",
+    "telephone": "+1234567890"
+  },
+  "payment": {
+    "method": "Credit Card",
+    "code": "cc",
+    "address": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "company": "",
+      "address_1": "123 Main St",
+      "address_2": "",
+      "city": "New York",
+      "postcode": "10001",
+      "country": "United States",
+      "zone": "New York"
+    }
+  },
+  "shipping": {
+    "method": "Standard Shipping",
+    "code": "standard",
+    "address": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "company": "",
+      "address_1": "123 Main St",
+      "address_2": "",
+      "city": "New York",
+      "postcode": "10001",
+      "country": "United States",
+      "zone": "New York"
+    }
+  },
+  "products": [
+    {
+      "order_product_id": 2001,
+      "product_id": 45,
+      "name": "Smartphone X",
+      "model": "SX-2023",
+      "quantity": 2,
+      "price": 329.99,
+      "total": 659.98,
+      "tax": 66.00,
+      "options": [
+        {
+          "order_option_id": 3001,
+          "name": "Color",
+          "value": "Black",
+          "type": "select"
+        }
+      ]
+    }
+  ],
+  "history": [
+    {
+      "order_history_id": 4001,
+      "order_status_id": 1,
+      "notify": true,
+      "comment": "Order placed",
+      "date_added": "2023-12-10T10:30:00.000Z"
+    },
+    {
+      "order_history_id": 4002,
+      "order_status_id": 3,
+      "notify": true,
+      "comment": "Order shipped",
+      "date_added": "2023-12-11T15:45:00.000Z"
+    }
+  ],
+  "totals": [
+    {
+      "code": "sub_total",
+      "title": "Sub-Total",
+      "value": 659.98,
+      "sort_order": 1
+    },
+    {
+      "code": "tax",
+      "title": "Tax",
+      "value": 66.00,
+      "sort_order": 5
+    },
+    {
+      "code": "total",
+      "title": "Total",
+      "value": 725.98,
+      "sort_order": 9
+    }
+  ],
+  "tracking": "TRK123456789",
+  "comment": "Please deliver to front door"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Admin: Get All Orders -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/orders</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get all orders with advanced filtering (admin only)</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>page</code> - Page number (default: 1)</li>
+                                            <li><code>limit</code> - Items per page (default: 20)</li>
+                                            <li><code>status</code> - Filter by order status ID</li>
+                                            <li><code>customer_id</code> - Filter by customer ID</li>
+                                            <li><code>date_from</code> - Filter from date (YYYY-MM-DD)</li>
+                                            <li><code>date_to</code> - Filter to date (YYYY-MM-DD)</li>
+                                            <li><code>search</code> - Search in name, email, order ID</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "orders": [
+    {
+      "order_id": 1001,
+      "customer_name": "John Doe",
+      "email": "john.doe@example.com",
+      "total": 725.98,
+      "order_status_id": 3,
+      "payment_method": "Credit Card",
+      "date_added": "2023-12-10T10:30:00.000Z",
+      "product_count": 1
+    }
+  ],
+  "summary": {
+    "total_orders": 150,
+    "total_amount": 45678.50,
+    "average_amount": 304.52
+  },
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "pages": 8
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Update Order Status -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-put">PUT</span>
+                                            <span class="ms-2">/api/orders/status/{id}</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Update order status (admin only)</p>
+                                        <h5>URL Parameters:</h5>
+                                        <ul>
+                                            <li><code>id</code> - Order ID</li>
+                                        </ul>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "order_status_id": 3,
+  "comment": "Order has been shipped via UPS",
+  "notify_customer": true
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Order status updated successfully",
+  "order_id": 1001,
+  "old_status": 2,
+  "new_status": 3
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get Order Statuses -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/orders/statuses</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get order status options</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "statuses": [
+    {"id": 1, "name": "Pending"},
+    {"id": 2, "name": "Processing"},
+    {"id": 3, "name": "Shipped"},
+    {"id": 4, "name": "Delivered"},
+    {"id": 5, "name": "Complete"},
+    {"id": 7, "name": "Canceled"},
+{"id": 8, "name": "Denied"},
+    {"id": 9, "name": "Canceled Reversal"},
+    {"id": 10, "name": "Failed"},
+    {"id": 11, "name": "Refunded"},
+    {"id": 12, "name": "Reversed"},
+    {"id": 13, "name": "Chargeback"},
+    {"id": 14, "name": "Expired"},
+    {"id": 15, "name": "Processed"},
+    {"id": 16, "name": "Voided"}
+  ]
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Checkout Routes -->
+                    <section id="checkout" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">💳 Checkout Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Start Checkout -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/checkout/start</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Start a checkout process</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+  "total": 725.98,
+  "items_count": 2,
+  "customer": {
+    "customer_id": 123,
+    "name": "John Doe",
+    "email": "john.doe@example.com"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Add Shipping Method -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/checkout/shipping</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Add shipping method to checkout</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+  "shipping_method": "Standard Shipping",
+  "shipping_code": "standard"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Shipping method added",
+  "checkout": {
+    "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+    "shipping_method": "Standard Shipping",
+    "shipping_code": "standard",
+    "date_modified": "2023-12-15T14:30:00.000Z"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Add Payment Method -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/checkout/payment</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Add payment method to checkout</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+  "payment_method": "Credit Card",
+  "payment_code": "cc"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Payment method added",
+  "checkout": {
+    "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+    "payment_method": "Credit Card",
+    "payment_code": "cc",
+    "date_modified": "2023-12-15T14:35:00.000Z"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Complete Checkout -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/checkout/complete</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Complete checkout and create order</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+  "comment": "Please deliver to front door"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "success": true,
+  "message": "Order created successfully",
+  "order_id": 1002
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Apply Coupon -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/checkout/apply-coupon</span>
+                                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Apply coupon to checkout</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "checkout_id": "64f8a1b2c3d4e5f6789012ab",
+  "coupon_code": "SAVE10"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Coupon applied successfully",
+  "discount": 72.60,
+  "new_total": 653.38
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Admin Routes -->
+                    <section id="admin" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">👨‍💼 Admin Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Get Admin Profile -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/admin/profile</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get admin profile</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "id": 1,
+  "username": "admin",
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "user_group_id": 1
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Update Admin -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-put">PUT</span>
+                                            <span class="ms-2">/api/admin/update/{id}</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Update admin profile</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "firstname": "Admin",
+  "lastname": "User",
+  "email": "admin@example.com",
+  "username": "admin"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Admin updated successfully",
+  "admin": {
+    "id": 1,
+    "username": "admin",
+    "name": "Admin User",
+    "email": "admin@example.com"
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Change Password -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-post">POST</span>
+                                            <span class="ms-2">/api/admin/change-password</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Change admin password</p>
+                                        <h5>Request Body:</h5>
+                                        <div class="code-block">
+<pre>{
+  "current_password": "oldpassword123",
+  "new_password": "newpassword456"
+}</pre>
+                                        </div>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "message": "Password changed successfully"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Get All Admins -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/admin/all</span>
+                                            <span class="auth-required ms-2">🔴 Superadmin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get all admins (superadmin only)</p>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "count": 3,
+  "admins": [
+    {
+      "id": 1,
+      "username": "admin",
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "user_group_id": 1,
+      "status": true,
+      "date_added": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "username": "manager",
+      "name": "Manager User",
+      "email": "manager@example.com",
+      "user_group_id": 2,
+      "status": true,
+      "date_added": "2023-02-01T00:00:00.000Z"
+    }
+  ]
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Search Routes -->
+                    <section id="search" class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">🔍 Search Routes</h2>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Search Products -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/search</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Enhanced search with MongoDB aggregation pipeline</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>query</code> - Search term</li>
+                                            <li><code>category</code> - Category ID filter</li>
+                                            <li><code>manufacturer</code> - Manufacturer ID filter</li>
+                                            <li><code>price_min</code> - Minimum price</li>
+                                            <li><code>price_max</code> - Maximum price</li>
+                                            <li><code>sort</code> - Sort by (relevance, price_asc, price_desc, name_asc, name_desc, date_added, popularity)</li>
+                                            <li><code>page</code> - Page number</li>
+                                            <li><code>limit</code> - Items per page</li>
+                                            <li><code>in_stock</code> - Filter by stock status (true/false)</li>
+                                            <li><code>has_image</code> - Filter by image presence (true/false)</li>
+                                            <li><code>on_sale</code> - Filter by special offers (true/false)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "products": [
+    {
+      "product_id": 123,
+      "name": "Smartphone X",
+      "description": "Latest smartphone with advanced features...",
+      "model": "SX-2023",
+      "price": 299.99,
+      "current_price": 269.99,
+      "has_special": true,
+      "image": "smartphone-x.jpg",
+      "quantity": 50,
+      "in_stock": true,
+      "manufacturer_name": "TechCorp",
+      "category_names": ["Electronics", "Smartphones"],
+      "date_added": "2023-01-15T10:30:00.000Z",
+      "viewed": 156,
+      "relevance_score": 8
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 25,
+    "pages": 2
+  },
+  "filters": {
+    "query": "smartphone",
+    "category": null,
+    "manufacturer": null,
+    "price_min": 0,
+    "price_max": null,
+    "sort": "relevance"
+  },
+  "summary": {
+    "total_results": 25,
+    "has_results": true,
+    "search_time": 1640123456789
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Search Suggestions -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/search/suggestions</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get search suggestions</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>q</code> - Search query (minimum 2 characters)</li>
+                                            <li><code>limit</code> - Number of suggestions (default: 10)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "query": "smart",
+  "suggestions": [
+    {
+      "name": "Smartphone X",
+      "type": "product",
+      "product_id": 123,
+      "image": "smartphone-x.jpg"
+    },
+    {
+      "name": "Smart TV",
+      "type": "product",
+      "product_id": 124,
+      "image": "smart-tv.jpg"
+    },
+    {
+      "name": "Smart Home",
+      "type": "category",
+      "category_id": 15
+    },
+    {
+      "name": "SmartTech Inc",
+      "type": "manufacturer",
+      "manufacturer_id": 8
+    }
+  ],
+  "total": 4
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Search Filters -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/search/filters</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get search filters with faceted counts</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>query</code> - Search term</li>
+                                            <li><code>category</code> - Category filter</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "filters": {
+    "categories": [
+      {
+        "category_id": 1,
+        "name": "Electronics",
+        "count": 45
+      },
+      {
+        "category_id": 2,
+        "name": "Smartphones",
+        "count": 12
+      }
+    ],
+    "manufacturers": [
+      {
+        "manufacturer_id": 5,
+        "name": "TechCorp",
+        "count": 8
+      },
+      {
+        "manufacturer_id": 7,
+        "name": "SmartTech Inc",
+        "count": 4
+      }
+    ],
+    "price_ranges": [
+      {
+        "id": 0,
+        "label": "Under $25",
+        "count": 5,
+        "min": 0,
+        "max": 25
+      },
+      {
+        "id": 25,
+        "label": "$25 - $50",
+        "count": 12,
+        "min": 25,
+        "max": 50
+      }
+    ],
+    "stock_status": [
+      {
+        "status": "in_stock",
+        "label": "In Stock",
+        "count": 38
+      },
+      {
+        "status": "out_of_stock",
+        "label": "Out of Stock",
+        "count": 7
+      }
+    ],
+    "special_offers": [
+      {
+        "has_special": true,
+        "label": "On Sale",
+        "count": 15
+      },
+      {
+        "has_special": false,
+        "label": "Regular Price",
+        "count": 30
+      }
+    ]
+  },
+  "price_range": {
+    "min": 15,
+    "max": 899,
+    "avg": 267
+  },
+  "sort_options": [
+    {"id": "relevance", "name": "Relevance"},
+    {"id": "popularity", "name": "Popularity"},
+    {"id": "price_asc", "name": "Price (Low to High)"},
+    {"id": "price_desc", "name": "Price (High to Low)"},
+    {"id": "date_added", "name": "Newest First"},
+    {"id": "name_asc", "name": "Name (A-Z)"},
+    {"id": "name_desc", "name": "Name (Z-A)"}
+  ]
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Popular Searches -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/search/popular</span>
+                                            <span class="auth-public ms-2">🟢 Public</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get popular searches with analytics</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>days</code> - Number of days (default: 30)</li>
+                                            <li><code>limit</code> - Number of results (default: 10)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "period": "30 days",
+  "popular_searches": [
+    {
+      "query": "smartphone",
+      "search_count": 156,
+      "avg_results": 25,
+      "last_searched": "2023-12-15T14:30:00.000Z",
+      "unique_users": 89
+    },
+    {
+      "query": "laptop",
+      "search_count": 134,
+      "avg_results": 18,
+      "last_searched": "2023-12-15T13:45:00.000Z",
+      "unique_users": 76
+    }
+  ],
+  "trending_searches": [
+    {
+      "query": "wireless earbuds",
+      "total_searches": 45,
+      "trend_score": 2.3
+    },
+    {
+      "query": "gaming chair",
+      "total_searches": 38,
+      "trend_score": 1.8
+    }
+  ],
+  "generated_at": "2023-12-15T15:00:00.000Z"
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Search Analytics (Admin) -->
+                                <div class="route-card">
+                                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                                        <div>
+                                            <span class="method-badge method-get">GET</span>
+                                            <span class="ms-2">/api/search/analytics</span>
+                                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                                        </div>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="accordion-content">
+                                        <p><strong>Description:</strong> Get search analytics for admin</p>
+                                        <h5>Query Parameters:</h5>
+                                        <ul>
+                                            <li><code>days</code> - Number of days (default: 30)</li>
+                                        </ul>
+                                        <h5>Response:</h5>
+                                        <div class="code-block">
+<pre>{
+  "period": "30 days",
+  "search_volume": [
+    {
+      "date": "2023-12-15",
+      "total_searches": 45,
+      "unique_queries": 28,
+      "avg_results": 15.2
+    },
+    {
+      "date": "2023-12-14",
+      "total_searches": 38,
+      "unique_queries": 25,
+      "avg_results": 14.8
+    }
+  ],
+  "zero_result_searches": [
+    {
+      "query": "non-existent product",
+      "count": 8,
+      "last_searched": "2023-12-15T12:00:00.000Z"
+    }
+  ],
+  "category_performance": [
+    {
+      "_id": 1,
+      "category_name": "Electronics",
+      "search_count": 156,
+      "avg_results": 25.3
+    }
+  ],
+  "summary": {
+    "total_searches": 1250,
+    "zero_result_count": 45
+  }
+}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics Routes -->
+    <section id="analytics" class="mb-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📊 Analytics Routes</h2>
+            </div>
+            <div class="card-body">
+
+                <!-- System Overview -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/analytics/overview</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get system overview statistics</p>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "timestamp": "2023-12-15T15:00:00.000Z",
+  "online": {
+    "total": 45,
+    "customers": 23,
+    "guests": 22
+  },
+  "totals": {
+    "products": 1250,
+    "customers": 890,
+    "orders": 2345,
+    "searches_30d": 5670
+  },
+  "new_30d": {
+    "products": 85,
+    "customers": 156,
+    "orders": 234
+  },
+  "top_products": [
+    {
+      "product_id": 123,
+      "name": "Smartphone X",
+      "views": 456
+    },
+    {
+      "product_id": 124,
+      "name": "Laptop Pro",
+      "views": 389
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Online Users -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/analytics/online-users</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get currently online users</p>
+                        <h5>Query Parameters:</h5>
+                        <ul>
+                            <li><code>page</code> - Page number (default: 1)</li>
+                            <li><code>limit</code> - Items per page (default: 20)</li>
+                            <li><code>user_type</code> - Filter by user type (customer/admin/guest)</li>
+                            <li><code>country</code> - Filter by country</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "online_users": [
+    {
+      "id": "64f8a1b2c3d4e5f6789012ab",
+      "user_id": 123,
+      "user_type": "customer",
+      "username": "John Doe",
+      "email": "john.doe@example.com",
+      "session_id": "sess_abc123",
+      "ip_address": "192.168.1.100",
+      "location": {
+        "country": "United States",
+        "region": "New York",
+        "city": "New York",
+        "latitude": 40.7128,
+        "longitude": -74.0060,
+        "timezone": "America/New_York"
+      },
+      "browser": "Chrome 119.0",
+      "operating_system": "Windows 10",
+      "device_type": "Desktop",
+      "current_url": "/products/123",
+      "entry_page": "/",
+      "referrer": "https://google.com",
+      "page_views": 5,
+      "last_activity": "2023-12-15T14:58:00.000Z"
+    }
+  ],
+  "summary": {
+    "total": 45,
+    "customers": 23,
+    "admins":1,
+    "guests": 21
+  },
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 45,
+    "pages": 3
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Activity -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/analytics/user-activity</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get user activity logs</p>
+                        <h5>Query Parameters:</h5>
+                        <ul>
+                            <li><code>page</code> - Page number</li>
+                            <li><code>limit</code> - Items per page</li>
+                            <li><code>user_id</code> - Filter by user ID</li>
+                            <li><code>user_type</code> - Filter by user type</li>
+                            <li><code>activity_type</code> - Filter by activity type</li>
+                            <li><code>date_from</code> - Filter from date</li>
+                            <li><code>date_to</code> - Filter to date</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "activities": [
+    {
+      "user_id": 123,
+      "user_type": "customer",
+      "session_id": "sess_abc123",
+      "ip_address": "192.168.1.100",
+      "activity_type": "view_product",
+      "activity_data": {
+        "method": "GET",
+        "path": "/api/products/123",
+        "status": 200,
+        "product_id": 123
+      },
+      "created_at": "2023-12-15T14:45:00.000Z"
+    }
+  ],
+  "summary": {
+    "total": 5670,
+    "by_activity": {
+      "view_product": 2345,
+      "search": 1234,
+      "add_to_cart": 567,
+      "login": 445,
+      "order": 123
+    }
+  },
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5670,
+    "pages": 284
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Logs -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/analytics/audit-logs</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get audit logs</p>
+                        <h5>Query Parameters:</h5>
+                        <ul>
+                            <li><code>user_id</code> - Filter by user ID</li>
+                            <li><code>action</code> - Filter by action (create/update/delete)</li>
+                            <li><code>entity_type</code> - Filter by entity type</li>
+                            <li><code>entity_id</code> - Filter by entity ID</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "audit_logs": [
+    {
+      "user_id": 1,
+      "user_type": "admin",
+      "username": "admin",
+      "ip_address": "192.168.1.50",
+      "action": "create",
+      "entity_type": "product",
+      "entity_id": 124,
+      "previous_state": null,
+      "new_state": {
+        "product_id": 124,
+        "name": "New Product",
+        "price": 99.99
+      },
+      "details": "",
+      "created_at": "2023-12-15T14:30:00.000Z"
+    }
+  ],
+  "summary": {
+    "total": 890,
+    "by_action": {
+      "create": 234,
+      "update": 456,
+      "delete": 89,
+      "login": 111
+    },
+    "by_entity_type": {
+      "product": 345,
+      "customer": 234,
+      "order": 178,
+      "category": 133
+    }
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Backup Routes -->
+    <section id="backup" class="mb-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">💾 Backup Routes</h2>
+            </div>
+            <div class="card-body">
+
+                <!-- Get Backups -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/backup</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get list of available backups</p>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "count": 3,
+  "backups": [
+    {
+      "name": "backup_2023-12-15T14-30-00-000Z",
+      "path": "/backups/backup_2023-12-15T14-30-00-000Z",
+      "created": "2023-12-15T14:30:00.000Z",
+      "database": "opencart_api_new",
+      "size_raw": 52428800,
+      "size": "50.0 MB"
+    },
+    {
+      "name": "manual_backup_2023-12-14T10-15-30-000Z",
+      "path": "/backups/manual_backup_2023-12-14T10-15-30-000Z",
+      "created": "2023-12-14T10:15:30.000Z",
+      "database": "opencart_api_new",
+      "size_raw": 48234567,
+      "size": "46.0 MB"
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create Backup -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-post">POST</span>
+                            <span class="ms-2">/api/backup</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Create a database backup</p>
+                        <h5>Request Body:</h5>
+                        <div class="code-block">
+<pre>{
+  "name": "manual_backup"
+}</pre>
+                        </div>
+                        <h5>Response (201):</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "Backup created successfully",
+  "backupName": "manual_backup_2023-12-15T15-00-00-000Z",
+  "path": "/backups/manual_backup_2023-12-15T15-00-00-000Z",
+  "timestamp": "2023-12-15T15:00:00.000Z"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restore Backup -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-post">POST</span>
+                            <span class="ms-2">/api/backup/restore/{backupName}</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Restore database from backup</p>
+                        <h5>URL Parameters:</h5>
+                        <ul>
+                            <li><code>backupName</code> - Name of the backup to restore</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "Database restored successfully",
+  "backupName": "manual_backup_2023-12-15T15-00-00-000Z",
+  "timestamp": "2023-12-15T15:05:00.000Z"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Backup -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-delete">DELETE</span>
+                            <span class="ms-2">/api/backup/{backupName}</span>
+                            <span class="auth-required ms-2">🔴 Admin Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Delete a backup</p>
+                        <h5>URL Parameters:</h5>
+                        <ul>
+                            <li><code>backupName</code> - Name of the backup to delete</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "Backup deleted successfully",
+  "backupName": "old_backup_2023-12-01T10-00-00-000Z"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Wishlist Routes -->
+    <section id="wishlist" class="mb-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">❤️ Wishlist Routes</h2>
+            </div>
+            <div class="card-body">
+
+                <!-- Get Wishlist -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/wishlist</span>
+                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get customer wishlist</p>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "count": 3,
+  "products": [
+    {
+      "product_id": 123,
+      "name": "Smartphone X",
+      "model": "SX-2023",
+      "price": 299.99,
+      "image": "smartphone-x.jpg",
+      "date_added": "2023-12-10T14:30:00.000Z"
+    },
+    {
+      "product_id": 124,
+      "name": "Laptop Pro",
+      "model": "LP-2023",
+      "price": 899.99,
+      "image": "laptop-pro.jpg",
+      "date_added": "2023-12-12T10:15:00.000Z"
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add to Wishlist -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-post">POST</span>
+                            <span class="ms-2">/api/wishlist/add</span>
+                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Add product to wishlist</p>
+                        <h5>Request Body:</h5>
+                        <div class="code-block">
+<pre>{
+  "product_id": 125
+}</pre>
+                        </div>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "Product added to wishlist",
+  "wishlist": {
+    "customer_id": 123,
+    "products": [
+      {
+        "product_id": 125,
+        "date_added": "2023-12-15T15:00:00.000Z"
+      }
+    ]
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Remove from Wishlist -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-delete">DELETE</span>
+                            <span class="ms-2">/api/wishlist/remove/{product_id}</span>
+                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Remove product from wishlist</p>
+                        <h5>URL Parameters:</h5>
+                        <ul>
+                            <li><code>product_id</code> - Product ID to remove</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "Product removed from wishlist",
+  "wishlist": {
+    "customer_id": 123,
+    "products": []
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Review Routes -->
+    <section id="reviews" class="mb-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">⭐ Review Routes</h2>
+            </div>
+            <div class="card-body">
+
+                <!-- Get Product Reviews -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/reviews/product/{product_id}</span>
+                            <span class="auth-public ms-2">🟢 Public</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get reviews for a product</p>
+                        <h5>URL Parameters:</h5>
+                        <ul>
+                            <li><code>product_id</code> - Product ID</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "count": 3,
+  "reviews": [
+    {
+      "review_id": 1,
+      "product_id": 123,
+      "customer_id": 456,
+      "author": "John Doe",
+      "text": "Great product! Highly recommended.",
+      "rating": 5,
+      "status": true,
+      "date_added": "2023-12-10T14:30:00.000Z",
+      "date_modified": "2023-12-10T14:30:00.000Z"
+    },
+    {
+      "review_id": 2,
+      "product_id": 123,
+      "customer_id": 789,
+      "author": "Jane Smith",
+      "text": "Good quality, fast shipping.",
+      "rating": 4,
+      "status": true,
+      "date_added": "2023-12-12T10:15:00.000Z",
+      "date_modified": "2023-12-12T10:15:00.000Z"
+    }
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Review -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-post">POST</span>
+                            <span class="ms-2">/api/reviews/add</span>
+                            <span class="auth-required ms-2">🔴 Customer Auth</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Add a review</p>
+                        <h5>Request Body:</h5>
+                        <div class="code-block">
+<pre>{
+  "product_id": 123,
+  "rating": 5,
+  "text": "Excellent product! Very satisfied with the purchase."
+}</pre>
+                        </div>
+                        <h5>Response (201):</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "Review added successfully. Pending approval.",
+  "review": {
+    "review_id": 3,
+    "product_id": 123,
+    "customer_id": 123,
+    "author": "John Doe",
+    "text": "Excellent product! Very satisfied with the purchase.",
+    "rating": 5,
+    "status": false,
+    "date_added": "2023-12-15T15:00:00.000Z",
+    "date_modified": "2023-12-15T15:00:00.000Z"
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Additional Utility Routes -->
+    <section id="utilities" class="mb-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🔧 Utility Routes</h2>
+            </div>
+            <div class="card-body">
+
+                <!-- Health Check -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/health</span>
+                            <span class="auth-public ms-2">🟢 Public</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> System health check</p>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "status": "ok",
+  "timestamp": "2023-12-15T15:00:00.000Z",
+  "uptime": 86400,
+  "memory": {
+    "rss": 52428800,
+    "heapTotal": 41943040,
+    "heapUsed": 25165824,
+    "external": 1843712,
+    "arrayBuffers": 74752
+  },
+  "services": {
+    "database": "connected",
+    "file_uploads": "enabled",
+    "image_serving": "enabled"
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Index -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api</span>
+                            <span class="auth-public ms-2">🟢 Public</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> API information and features</p>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>{
+  "message": "OpenCart REST API with Enhanced File Management",
+  "version": "2.1",
+  "documentation": "/api-docs",
+  "health_check": "/health",
+  "metrics": "/metrics",
+  "features": [
+    "Product CRUD with file uploads",
+    "Image management and serving",
+    "Secure file downloads for customers",
+    "Temporary download links (30min expiry)",
+    "File upload validation",
+    "Image optimization and caching",
+    "Rate limiting for downloads",
+    "File access logging",
+    "Health monitoring",
+    "Performance metrics"
+  ],
+  "endpoints": [
+    "/api/customers",
+    "/api/products (enhanced)",
+    "/api/categories",
+    "/api/manufacturers",
+    "/api/orders",
+    "/api/cart",
+    "/api/wishlist",
+    "/api/downloads",
+    "/api/reviews",
+    "/api/search",
+    "/api/locations",
+    "/api/checkout",
+    "/api/docs",
+    "/api/admin",
+    "/api/dashboard",
+    "/api/coupons",
+    "/api/backup",
+    "/api/analytics",
+    "/api/addresses"
+  ]
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Countries -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/locations/countries</span>
+                            <span class="auth-public ms-2">🟢 Public</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get all countries</p>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>[
+  {
+    "country_id": 1,
+    "name": "United States",
+    "iso_code_2": "US",
+    "iso_code_3": "USA",
+    "address_format": "",
+    "postcode_required": true,
+    "status": true
+  },
+  {
+    "country_id": 2,
+    "name": "Canada",
+    "iso_code_2": "CA",
+    "iso_code_3": "CAN",
+    "address_format": "",
+    "postcode_required": true,
+    "status": true
+  }
+]</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Zones by Country -->
+                <div class="route-card">
+                    <button class="accordion-button" onclick="toggleAccordion(this)">
+                        <div>
+                            <span class="method-badge method-get">GET</span>
+                            <span class="ms-2">/api/locations/zones/{country_id}</span>
+                            <span class="auth-public ms-2">🟢 Public</span>
+                        </div>
+                        <span>▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p><strong>Description:</strong> Get zones for a country</p>
+                        <h5>URL Parameters:</h5>
+                        <ul>
+                            <li><code>country_id</code> - Country ID</li>
+                        </ul>
+                        <h5>Response:</h5>
+                        <div class="code-block">
+<pre>[
+  {
+    "zone_id": 32,
+    "country_id": 1,
+    "name": "New York",
+    "code": "NY",
+    "status": true
+  },
+  {
+    "zone_id": 33,
+    "country_id": 1,
+    "name": "California",
+    "code": "CA",
+    "status": true
+  }
+]</pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer footer-transparent d-print-none">
+            <div class="container-xl">
+                <div class="row text-center align-items-center flex-row-reverse">
+                    <div class="col-lg-auto ms-lg-auto">
+                        <ul class="list-inline list-inline-dots mb-0">
+                            <li class="list-inline-item">
+                                <a href="/api-docs" class="link-secondary">Swagger Documentation</a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="/health" class="link-secondary">Health Check</a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="/metrics" class="link-secondary">Metrics</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                        <ul class="list-inline list-inline-dots mb-0">
+                            <li class="list-inline-item">
+                                Copyright © 2023 OpenCart REST API Documentation
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabler Core JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    
+    <script>
+        // Accordion functionality
+        function toggleAccordion(button) {
+            const content = button.nextElementSibling;
+            const arrow = button.querySelector('span:last-child');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('show');
+                arrow.textContent = '▲';
+            }
+        }
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Copy code functionality
+        function addCopyButtons() {
+            document.querySelectorAll('.code-block pre').forEach(pre => {
+                const copyButton = document.createElement('button');
+                copyButton.className = 'btn btn-sm btn-outline-secondary position-absolute';
+                copyButton.style.top = '8px';
+                copyButton.style.right = '8px';
+                copyButton.innerHTML = '📋 Copy';
+                copyButton.onclick = () => {
+                    navigator.clipboard.writeText(pre.textContent);
+                    copyButton.innerHTML = '✅ Copied!';
+                    setTimeout(() => {
+                        copyButton.innerHTML = '📋 Copy';
+                    }, 2000);
+                };
+                
+                pre.parentElement.style.position = 'relative';
+                pre.parentElement.appendChild(copyButton);
+            });
+        }
+
+        // Initialize copy buttons when page loads
+        document.addEventListener('DOMContentLoaded', addCopyButtons);
+
+        // Search functionality
+        function addSearchFunction() {
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'form-control';
+            searchInput.placeholder = 'Search routes...';
+            searchInput.style.marginBottom = '20px';
+            
+            const container = document.querySelector('.container-xl .page-body');
+            container.insertBefore(searchInput, container.firstChild);
+            
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                document.querySelectorAll('.route-card').forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(query) ? 'block' : 'none';
+                });
+            });
+        }
+
+        // Initialize search
+        document.addEventListener('DOMContentLoaded', addSearchFunction);
+    </script>
+</body>
+</html>
